@@ -4,7 +4,7 @@ import { json } from "@remix-run/node";
 
 /**
  * POST /api/onboard
- * Luu ý: du?ng d?n db tuong d?i t? v? trí file này là ../../db.server
+ * From this file the relative path to app/db.server.js is ../../db.server
  */
 export const action = async ({ request }) => {
   try {
@@ -18,7 +18,7 @@ export const action = async ({ request }) => {
       for (const [k, v] of form.entries()) body[k] = v;
     }
 
-    // N?u mu?n luu vào DB (b? comment khi dã t?o model)
+    // N?u mu?n luu vào DB (b? comment khi dã có model Onboard)
     // const created = await db.onboard.create({ data: { payload: JSON.stringify(body) } });
 
     console.log("/api/onboard received:", body);
