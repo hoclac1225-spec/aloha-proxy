@@ -1,0 +1,33 @@
+// remix.config.cjs
+if (
+    process.env.HOST &&
+    (!process.env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL === process.env.HOST)
+  ) {
+    process.env.SHOPIFY_APP_URL = process.env.HOST;
+    delete process.env.HOST;
+  }
+  
+  /** @type {import('@remix-run/dev').AppConfig} */
+  module.exports = {
+    appDirectory: "app",
+    assetsBuildDirectory: "public/build",
+    serverBuildPath: "build/server/index.cjs",
+    publicPath: "/build/",
+    serverModuleFormat: "cjs",
+    ignoredRouteFiles: ["**/.*"],
+    // -> thêm dòng này để Remix bundle các dependency nguy cơ import CSS/JSON
+    serverDependenciesToBundle: [
+      "@shopify/polaris",
+      "@shopify/shopify-app-remix"
+    ],
+    dev: { port: Number(process.env.PORT) || 60541 },
+    future: {
+      v3_routeConfig: true,
+      v3_lazyRouteDiscovery: true,
+      v3_relativeSplatPath: true,
+      v3_fetcherPersist: true,
+      v3_throwAbortReason: true,
+      v3_singleFetch: false
+    }
+  };
+  

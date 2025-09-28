@@ -1,0 +1,7 @@
+At line:1 char:44
++ Select-String -Path node_modules\\**\\*.{js,mjs,cjs} -Pattern '\.css' ...
++                                            ~
+Missing argument in parameter list.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : MissingArgument
+ 

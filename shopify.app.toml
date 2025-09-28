@@ -1,0 +1,33 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "55abba99ed80bfe4320bb75a9a12624f"
+name = "Aloha Proxy"
+application_url = "https://festivals-adaptation-dose-creature.trycloudflare.com"
+embedded = true
+handle = "aloha-proxy"
+
+[build]
+automatically_update_urls_on_dev = true
+include_config_on_deploy = true
+
+[webhooks]
+api_version = "2025-07"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+[auth]
+redirect_urls = ["https://festivals-adaptation-dose-creature.trycloudflare.com/auth/callback", "https://festivals-adaptation-dose-creature.trycloudflare.com/auth/shopify/callback", "https://festivals-adaptation-dose-creature.trycloudflare.com/api/auth/callback"]
+
+[app_proxy]
+url = "https://festivals-adaptation-dose-creature.trycloudflare.com"
+subpath = "aloha"
+prefix = "apps"
+
+[pos]
+embedded = false

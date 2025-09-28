@@ -1,0 +1,44 @@
+Folder PATH listing for volume WIN
+Volume serial number is 7526-EDE0
+C:\SHOPIFY\ALOHA-PROXY\ALOHA-PROXY\APP
+³   cloudflared-amd64.pkg
+³   db.server.js
+³   entry.server.jsx
+³   root.jsx
+³   routes.js
+³   shopify.server.js
+³   test-db.js
+³   
+ÃÄÄÄdb
+ÃÄÄÄlib
+³       db.js
+³       prisma.js
+³       shopify.js
+³       
+ÃÄÄÄroutes
+³   ³   app.additional.jsx
+³   ³   app.jsx
+³   ³   app._index.disabled.jsx
+³   ³   apps.aloha.hello.jsx
+³   ³   auth.$.jsx
+³   ³   hello.jsx
+³   ³   index.jsx
+³   ³   webhooks.app.scopes_update.jsx
+³   ³   webhooks.app.uninstalled.jsx
+³   ³   
+³   ÃÄÄÄapi
+³   ³   ÀÄÄÄonboard
+³   ³           index.jsx
+³   ³           
+³   ÃÄÄÄauth
+³   ³       callback.jsx
+³   ³       index.jsx
+³   ³       login.jsx
+³   ³       
+³   ÃÄÄÄonboard
+³   ÃÄÄÄproxy
+³   ÀÄÄÄ_index_disabled_folder
+³           route.jsx
+³           styles.module.css
+³           
+ÀÄÄÄscripts
