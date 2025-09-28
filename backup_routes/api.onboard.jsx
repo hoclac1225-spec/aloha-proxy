@@ -1,4 +1,4 @@
-import db from "~/db.server";         // thêm dòng này
+﻿import db from "../db.server";       // thêm dòng này
 import { json } from "@remix-run/node";
 
 export const action = async ({ request }) => {
