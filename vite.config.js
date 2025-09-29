@@ -11,7 +11,7 @@ export default ({ mode }) => {
 
   const APP_URL = env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL || "https://aloha-proxy.onrender.com";
 
-  const PORT = Number(env.PORT || process.env.PORT || 60600);
+  const PORT = Number(env.PORT || process.env.PORT || 10000);
 
   const host = (() => {
     try { return new URL(APP_URL).hostname; } catch { return "127.0.0.1"; }
