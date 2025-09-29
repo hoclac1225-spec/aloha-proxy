@@ -53,9 +53,12 @@ export default ({ mode }) => {
         },
       }),
       tsconfigPaths(),
-      json(),
+      json({ namedExports: false, esModule: true }), // ⚡ Chỉnh để import JSON Polaris an toàn
     ],
     build: { assetsInlineLimit: 0 },
-    optimizeDeps: { include: ["@shopify/app-bridge-react", "@shopify/polaris"] },
+    optimizeDeps: { 
+      include: ["@shopify/app-bridge-react", "@shopify/polaris"],
+      exclude: ["@shopify/polaris/locales/en.json"] // ⚡ Bỏ qua JSON gây lỗi
+    },
   });
 };
