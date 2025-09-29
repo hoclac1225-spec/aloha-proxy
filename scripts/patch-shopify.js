@@ -18,8 +18,8 @@ const files = walk(base);
 let patched = 0;
 for (const f of files) {
   const content = fs.readFileSync(f, "utf8");
-  if (content.includes("with { type: 'json' }")) {
-    const updated = content.split("with { type: 'json' }").join("assert { type: 'json' }");
+  if (content.includes("assert { type: 'json' }")) {
+    const updated = content.split("assert { type: 'json' }").join("assert { type: 'json' }");
     fs.writeFileSync(f, updated, "utf8");
     console.log("Patched", f);
     patched++;
