@@ -1,7 +1,29 @@
 // app/locales/en.js
 export const en = {
-  greeting: "Hello",
-  cancel: "Cancel",
-  submit: "Submit",
-  // copy tất cả các key từ en.json gốc của Polaris vào đây
+  Polaris: {
+    Common: {
+      cancel: "Cancel",
+      submit: "Submit",
+      save: "Save",
+      edit: "Edit",
+      delete: "Delete",
+      search: "Search",
+      loading: "Loading..."
+    },
+    AppProvider: {
+      title: "App Title",
+      subtitle: "App Subtitle",
+      toast: {
+        success: "Action was successful",
+        error: "Something went wrong"
+      }
+    },
+    Button: {
+      loading: "Loading..."
+    },
+    Modal: {
+      close: "Close"
+    },
+    // ... copy thêm tất cả các key-value khác từ en.json Polaris nếu cần
+  }
 };
