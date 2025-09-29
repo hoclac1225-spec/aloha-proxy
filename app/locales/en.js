@@ -1,8 +1,24 @@
 // app/locales/en.js
-export const en = {
+
+const en = {
   Polaris: {
-    Common: { cancel: "Cancel", submit: "Submit", save: "Save", edit: "Edit", delete: "Delete", search: "Search", loading: "Loading..." },
-    AppProvider: { title: "App Title", subtitle: "App Subtitle", toast: { success: "Action was successful", error: "Something went wrong" } },
+    Common: {
+      cancel: "Cancel",
+      submit: "Submit",
+      save: "Save",
+      edit: "Edit",
+      delete: "Delete",
+      search: "Search",
+      loading: "Loading...",
+    },
+    AppProvider: {
+      title: "App Title",
+      subtitle: "App Subtitle",
+      toast: {
+        success: "Action was successful",
+        error: "Something went wrong",
+      },
+    },
     Button: { loading: "Loading..." },
     Modal: { close: "Close" },
     ChoiceList: { selectAll: "Select all", deselectAll: "Deselect all" },
@@ -12,6 +28,8 @@ export const en = {
     Toast: { dismiss: "Dismiss" },
     TopBar: { toggleMenuLabel: "Toggle menu" },
     Navigation: { close: "Close navigation" },
-    Collapsible: { expand: "Expand", collapse: "Collapse" }
-  }
+    Collapsible: { expand: "Expand", collapse: "Collapse" },
+  },
 };
+
+export default en;
