@@ -9,7 +9,7 @@ function walk(dir){
       if (s.isDirectory()) walk(fp);
       else if (fp.endsWith('.mjs')||fp.endsWith('.js')||fp.endsWith('.cjs')){
         const c = fs.readFileSync(fp,'utf8');
-        if (c.includes("with { type: 'json' }")) hits.push(fp);
+        if (c.includes("assert { type: 'json' }")) hits.push(fp);
       }
     });
   }catch(e){}
