@@ -13,11 +13,7 @@ export default ({ mode }) => {
   const PORT = Number(env.PORT || process.env.PORT || 60600);
 
   const host = (() => {
-    try {
-      return new URL(APP_URL).hostname;
-    } catch {
-      return "127.0.0.1";
-    }
+    try { return new URL(APP_URL).hostname; } catch { return "127.0.0.1"; }
   })();
 
   const hmrConfig =
@@ -53,12 +49,12 @@ export default ({ mode }) => {
         },
       }),
       tsconfigPaths(),
-      json({ namedExports: false, esModule: true }), // ⚡ Chỉnh để import JSON Polaris an toàn
+      json({ namedExports: false, esModule: true }),
     ],
     build: { assetsInlineLimit: 0 },
     optimizeDeps: { 
       include: ["@shopify/app-bridge-react", "@shopify/polaris"],
-      exclude: ["@shopify/polaris/locales/en.json"] // ⚡ Bỏ qua JSON gây lỗi
+      exclude: ["@shopify/polaris/locales/en.json"] // ⚡ tránh import JSON gây lỗi
     },
   });
 };
