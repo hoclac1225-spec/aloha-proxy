@@ -1,12 +1,20 @@
 // app/root.jsx
 import React from "react";
-import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from "@remix-run/react";
+import {
+  Links,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+  useLoaderData,
+} from "@remix-run/react";
 import { json } from "@remix-run/node";
 import { AppProvider } from "@shopify/polaris";
-import { en } from "./locales/en";
+import { en } from "./locales/en"; // file JS, không phải JSON
 
 export const loader = async () => {
-  const SHOPIFY_APP_URL = process.env.SHOPIFY_APP_URL ?? "https://aloha-proxy.onrender.com";
+  const SHOPIFY_APP_URL =
+    process.env.SHOPIFY_APP_URL ?? "https://aloha-proxy.onrender.com";
   return json({ SHOPIFY_APP_URL });
 };
 
@@ -34,9 +42,21 @@ export default function App() {
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <Meta />
         <Links />
-        <link rel="preconnect" href="https://cdn.shopify.com" crossOrigin="anonymous" />
-        <link rel="stylesheet" href="https://cdn.shopify.com/static/fonts/inter/v4/styles.css" crossOrigin="anonymous" />
-        <script dangerouslySetInnerHTML={{ __html: `window.SHOPIFY_APP_URL = ${JSON.stringify(shopifyAppUrl)};` }} />
+        <link
+          rel="preconnect"
+          href="https://cdn.shopify.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="stylesheet"
+          href="https://cdn.shopify.com/static/fonts/inter/v4/styles.css"
+          crossOrigin="anonymous"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.SHOPIFY_APP_URL = ${JSON.stringify(shopifyAppUrl)};`,
+          }}
+        />
       </head>
       <body>
         <AppProvider i18n={en.Polaris}>
