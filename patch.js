@@ -12,7 +12,7 @@ if (!fs.existsSync(p)) {
 
 let s = fs.readFileSync(p, 'utf8');
 
-const oldPattern = " with { type: 'json' }";
+const oldPattern = " assert { type: 'json' }";
 const newPattern = " assert { type: 'json' }";
 
 if (s.includes(oldPattern)) {
