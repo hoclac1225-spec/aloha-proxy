@@ -1,6 +1,6 @@
 import { jsxs, Fragment, jsx } from 'react/jsx-runtime';
 import { AppProvider as AppProvider$1 } from '@shopify/polaris';
-import englishI18n from '@shopify/polaris/locales/en.json' with { type: 'json' };
+import englishI18n from '@shopify/polaris/locales/en.json' assert { type: 'json' };
 import { useNavigate } from '@remix-run/react';
 import { useEffect } from 'react';
 import { APP_BRIDGE_URL } from '../../const.mjs';
