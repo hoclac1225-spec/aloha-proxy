@@ -1,35 +1,40 @@
-// app/locales/en.js
-
-const en = {
-  Polaris: {
-    Common: {
+export default {
+  polaris: {
+    common: {
+      ok: "OK",
       cancel: "Cancel",
-      submit: "Submit",
+      close: "Close",
       save: "Save",
-      edit: "Edit",
       delete: "Delete",
-      search: "Search",
       loading: "Loading...",
     },
-    AppProvider: {
-      title: "App Title",
-      subtitle: "App Subtitle",
-      toast: {
-        success: "Action was successful",
-        error: "Something went wrong",
-      },
+    resourcePicker: {
+      searchPlaceholder: "Search products, collections, or variants",
+      emptyState: "No results found",
+      selectResource: "Select a resource",
     },
-    Button: { loading: "Loading..." },
-    Modal: { close: "Close" },
-    ChoiceList: { selectAll: "Select all", deselectAll: "Deselect all" },
-    Filters: { moreFilters: "More filters", reset: "Reset" },
-    TextField: { characterCount: "characters", clear: "Clear" },
-    Page: { back: "Back" },
-    Toast: { dismiss: "Dismiss" },
-    TopBar: { toggleMenuLabel: "Toggle menu" },
-    Navigation: { close: "Close navigation" },
-    Collapsible: { expand: "Expand", collapse: "Collapse" },
+    datePicker: {
+      previousMonth: "Previous month",
+      nextMonth: "Next month",
+      today: "Today",
+    },
+    pagination: {
+      next: "Next",
+      previous: "Previous",
+    },
+    modal: {
+      confirm: "Confirm",
+      dismiss: "Dismiss",
+      secondaryAction: "Secondary action",
+    },
+    errors: {
+      network: "Network error. Please try again.",
+      server: "Server error. Contact support if this continues.",
+    },
+    form: {
+      required: "This field is required",
+      invalid: "Invalid input",
+      success: "Saved successfully",
+    },
   },
 };
-
-export default en;
