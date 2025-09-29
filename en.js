@@ -1,3 +1,4 @@
+// app/locales/en.js
 export const en = {
   Polaris: {
     Common: {
@@ -23,6 +24,24 @@ export const en = {
     Modal: {
       close: "Close"
     },
-    // ... thêm tất cả key khác từ en.json Polaris
+    ChoiceList: {
+      selectAll: "Select all",
+      deselectAll: "Deselect all"
+    },
+    Filters: {
+      moreFilters: "More filters",
+      reset: "Reset"
+    },
+    TextField: {
+      characterCount: "characters",
+      clear: "Clear"
+    },
+    Page: {
+      back: "Back"
+    },
+    Toast: {
+      dismiss: "Dismiss"
+    },
+    // Bạn có thể thêm các key khác từ en.json Polaris nếu cần
   }
 };
