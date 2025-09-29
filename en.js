@@ -42,5 +42,16 @@ export const en = {
     Toast: {
       dismiss: "Dismiss"
     },
+    // Polaris còn có thể cần các module khác, thêm nếu dùng
+    TopBar: {
+      toggleMenuLabel: "Toggle menu"
+    },
+    Navigation: {
+      close: "Close navigation"
+    },
+    Collapsible: {
+      expand: "Expand",
+      collapse: "Collapse"
+    }
   }
 };
