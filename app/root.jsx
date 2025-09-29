@@ -9,20 +9,14 @@ import {
   useLoaderData,
 } from "@remix-run/react";
 import { json } from "@remix-run/node";
+import { AppProvider } from "@shopify/polaris";
+import { en } from "./locales/en"; // import file en.js
 
-/**
- * Loader trả SHOPIFY_APP_URL từ process.env (server runtime).
- * Điều này giúp SSR in giá trị đúng và tránh hydration mismatch.
- */
 export const loader = async () => {
   const SHOPIFY_APP_URL = process.env.SHOPIFY_APP_URL ?? "";
   return json({ SHOPIFY_APP_URL });
 };
 
-/**
- * Content Security Policy rõ ràng (cập nhật để bao gồm font-src).
- * Bạn có thể điều chỉnh domain ngrok nếu cần; wildcard https://*.ngrok-free.app
- */
 export const headers = () => {
   const csp =
     "default-src 'self'; " +
@@ -47,19 +41,14 @@ export default function App() {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
-
         <Meta />
         <Links />
-
-        {/* Preconnect / fonts */}
         <link rel="preconnect" href="https://cdn.shopify.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
           href="https://cdn.shopify.com/static/fonts/inter/v4/styles.css"
           crossOrigin="anonymous"
         />
-
-        {/* In giá trị SHOPIFY_APP_URL ở server (JSON.stringify để an toàn) */}
         <script
           dangerouslySetInnerHTML={{
             __html: `window.SHOPIFY_APP_URL = ${JSON.stringify(shopifyAppUrl)};`,
@@ -67,7 +56,9 @@ export default function App() {
         />
       </head>
       <body>
-        <Outlet />
+        <AppProvider i18n={en.Polaris}>
+          <Outlet />
+        </AppProvider>
         <ScrollRestoration />
         <Scripts />
       </body>
