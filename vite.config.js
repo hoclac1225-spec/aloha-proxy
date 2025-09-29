@@ -9,7 +9,8 @@ installGlobals({ nativeFetch: true });
 export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
-  const APP_URL = env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL || "http://127.0.0.1:60600";
+  const APP_URL = env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL || "https://aloha-proxy.onrender.com";
+
   const PORT = Number(env.PORT || process.env.PORT || 60600);
 
   const host = (() => {
