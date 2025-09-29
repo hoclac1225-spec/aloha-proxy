@@ -1,4 +1,3 @@
-// app/locales/en.js
 export const en = {
   Polaris: {
     Common: {
@@ -24,6 +23,6 @@ export const en = {
     Modal: {
       close: "Close"
     },
-    // ... copy thêm tất cả các key-value khác từ en.json Polaris nếu cần
+    // ... thêm tất cả key khác từ en.json Polaris
   }
 };
