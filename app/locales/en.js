@@ -1,6 +1,7 @@
 // app/locales/en.js
+// Phiên bản JS của bản dịch Polaris (minimal). Xuất BOTH named `en` và default.
 
-const en = {
+export const en = {
   Polaris: {
     Common: {
       cancel: "Cancel",
@@ -19,41 +20,18 @@ const en = {
         error: "Something went wrong"
       }
     },
-    Button: {
-      loading: "Loading..."
-    },
-    Modal: {
-      close: "Close"
-    },
-    ChoiceList: {
-      selectAll: "Select all",
-      deselectAll: "Deselect all"
-    },
-    Filters: {
-      moreFilters: "More filters",
-      reset: "Reset"
-    },
-    TextField: {
-      characterCount: "characters",
-      clear: "Clear"
-    },
-    Page: {
-      back: "Back"
-    },
-    Toast: {
-      dismiss: "Dismiss"
-    },
-    TopBar: {
-      toggleMenuLabel: "Toggle menu"
-    },
-    Navigation: {
-      close: "Close navigation"
-    },
-    Collapsible: {
-      expand: "Expand",
-      collapse: "Collapse"
-    }
+    Button: { loading: "Loading..." },
+    Modal: { close: "Close" },
+    ChoiceList: { selectAll: "Select all", deselectAll: "Deselect all" },
+    Filters: { moreFilters: "More filters", reset: "Reset" },
+    TextField: { characterCount: "characters", clear: "Clear" },
+    Page: { back: "Back" },
+    Toast: { dismiss: "Dismiss" },
+    TopBar: { toggleMenuLabel: "Toggle menu" },
+    Navigation: { close: "Close navigation" },
+    Collapsible: { expand: "Expand", collapse: "Collapse" }
   }
 };
 
+// Default export để các import mặc định vẫn hoạt động
 export default en;
