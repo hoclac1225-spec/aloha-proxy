@@ -42,6 +42,5 @@ export const en = {
     Toast: {
       dismiss: "Dismiss"
     },
-    // Bạn có thể thêm các key khác từ en.json Polaris nếu cần
   }
 };
