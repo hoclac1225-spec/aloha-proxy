@@ -1,5 +1,5 @@
 // app/locales/en.js
-export const en = {
+const en = {
   Polaris: {
     Common: {
       cancel: "Cancel",
