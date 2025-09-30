@@ -4,7 +4,7 @@
     "scripts": {
         "build": "remix vite:build",
         "check-locales": "node ./check-locales.mjs",
-        "prebuild": "npm run check-locales && node -e \"console.log(require('fs').readFileSync('app/locales/en.json','utf8'))\"",
+        "prebuild": "npm run check-locales",
         "dev": "shopify app dev",
         "config:link": "shopify app config link",
         "generate": "shopify app generate",
