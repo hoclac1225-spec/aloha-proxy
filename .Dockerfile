@@ -2,48 +2,31 @@
 # Stage 1: Build
 # ===============================
 FROM node:20-alpine AS builder
-
 WORKDIR /app
 
-# Cho phép truyền build-time debug (mặc định rỗng)
-ARG BUILD_DEBUG=""
-# Nếu BUILD_DEBUG được truyền, export cho các bước tiếp theo (sẽ ảnh hưởng tới RUN npm run build)
-ENV DEBUG=${BUILD_DEBUG}
-
-# Copy package.json & package-lock.json
 COPY package*.json ./
-
-# Cài tất cả dependencies (bao gồm devDependencies)
 RUN npm ci
 
-# Copy toàn bộ source code
 COPY . .
-
-# Build Remix app (DEBUG sẽ có hiệu lực trong bước này nếu BUILD_DEBUG được thiết lập)
+ENV NODE_ENV=production
 RUN npm run build
 
 # ===============================
 # Stage 2: Production
 # ===============================
-FROM node:20-alpine AS runtime
-
+FROM node:20-alpine
 WORKDIR /app
 
-# Copy package.json & package-lock.json
 COPY package*.json ./
-
-# Cài chỉ runtime dependencies
 RUN npm ci --omit=dev
 
-# Copy folder build từ stage builder
+# Copy built artifacts
 COPY --from=builder /app/build ./build
-
-# Copy file server cần thiết (nếu có)
-COPY --from=builder /app/remix.config.js ./remix.config.js
 COPY --from=builder /app/public ./public
 
-# Port mặc định
-ENV PORT=10000
+# If you really need remix.config.js at runtime, uncomment the next line and
+# ensure remix.config.js is included in the repo and present in builder stage:
+# COPY --from=builder /app/remix.config.js ./remix.config.js
 
-# Start app (đảm bảo script này tồn tại trong package.json)
+ENV PORT=10000
 CMD ["npm", "run", "docker-start"]
