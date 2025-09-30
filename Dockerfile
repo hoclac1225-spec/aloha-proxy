@@ -24,6 +24,10 @@ RUN npm ci --omit=dev
 
 # copy build, public và prisma từ builder
 COPY --from=builder /app/build ./build
+
+# Copy file server cần thiết (nếu có)
+# NOTE: runtime copy of remix.config.js intentionally removed to fix Docker build
+
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
@@ -36,4 +40,3 @@ EXPOSE 3000
 
 # chạy entrypoint khi container start
 ENTRYPOINT ["./entrypoint.sh"]
-
