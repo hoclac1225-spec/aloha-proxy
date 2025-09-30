@@ -1,5 +1,7 @@
 // vite.config.js
+import fs from "fs";
 import path from "path";
+
 import { vitePlugin as remix } from "@remix-run/dev";
 import { installGlobals } from "@remix-run/node";
 import { defineConfig, loadEnv } from "vite";
@@ -8,6 +10,60 @@ import json from "@rollup/plugin-json";
 import stripBom from "strip-bom";
 
 installGlobals({ nativeFetch: true });
+
+/** Debug plugin: log khi JSON trong thư mục "locales" được load/transform */
+function debugJsonLoadPlugin() {
+  const outFile = path.resolve(process.cwd(), "debug-json-transform.log");
+  // ensure log file exists (appendFileSync will create if missing, but write header first run)
+  try {
+    if (!fs.existsSync(outFile)) {
+      fs.writeFileSync(outFile, `[debug-json-transform log] ${new Date().toISOString()}\n\n`);
+    }
+  } catch (e) {
+    /* ignore */
+  }
+
+  return {
+    name: "debug-json-load",
+    enforce: "pre",
+    buildStart() {
+      console.log("🔧 debug-json-load plugin active — logging to", outFile);
+    },
+    load(id) {
+      // id may be absolute path; canonicalize to forward slashes for matching
+      const normalized = id.replace(/\\/g, "/");
+      if (normalized.includes("/locales/") && normalized.endsWith(".json")) {
+        console.log(`🔍 [DEBUG-load] id = ${id}`);
+        try {
+          const stat = fs.statSync(id);
+          console.log(`    size=${stat.size} bytes`);
+        } catch (e) {
+          // ignore
+        }
+      }
+      return null;
+    },
+    transform(code, id) {
+      const normalized = id.replace(/\\/g, "/");
+      if (normalized.includes("/locales/") && normalized.endsWith(".json")) {
+        const head = code.slice(0, 1000); // preview up to 1000 chars
+        console.log("🔍 [DEBUG-transform] id =", id);
+        console.log("🔍 [DEBUG-code-preview] first 200 chars:\n", head.slice(0, 200).replace(/\n/g, "\\n"));
+
+        // Append to log file with timestamp and file path
+        try {
+          fs.appendFileSync(
+            outFile,
+            `\n[${new Date().toISOString()}] ${id}\n---first 1000 chars---\n${head}\n---end---\n`
+          );
+        } catch (e) {
+          console.error("⚠️ Failed to write debug log:", e && e.message);
+        }
+      }
+      return null;
+    },
+  };
+}
 
 export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -52,6 +108,9 @@ export default ({ mode }) => {
       fs: { allow: ["app", "node_modules"] },
     },
     plugins: [
+      // debug plugin first so we see raw loads/transforms before other plugins touch file
+      debugJsonLoadPlugin(),
+
       remix({
         ignoredRouteFiles: ["**/.*"],
         future: {
@@ -63,12 +122,17 @@ export default ({ mode }) => {
           v3_routeConfig: true,
         },
       }),
+
       tsconfigPaths(),
+
+      // rollup json plugin used by Vite — keep namedExports false to avoid named export conversion
       json({ namedExports: false, esModule: true }),
+
       // --- strip BOM plugin ---
       {
         name: "strip-bom",
         transform(code, id) {
+          // only apply to text files; strip-bom returns original if none
           return stripBom(code);
         },
       },
