@@ -5,6 +5,7 @@ import { installGlobals } from "@remix-run/node";
 import { defineConfig, loadEnv } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import json from "@rollup/plugin-json";
+import stripBom from "strip-bom";
 
 installGlobals({ nativeFetch: true });
 
@@ -30,7 +31,6 @@ export default ({ mode }) => {
   return defineConfig({
     resolve: {
       alias: [
-        // Redirect imports of the package JSON to your JS locale file
         {
           find: "@shopify/polaris/locales/en.json",
           replacement: path.resolve(__dirname, "app/locales/en.js"),
@@ -64,13 +64,18 @@ export default ({ mode }) => {
         },
       }),
       tsconfigPaths(),
-      // Keep json plugin; alias handles the problematic file.
       json({ namedExports: false, esModule: true }),
+      // --- strip BOM plugin ---
+      {
+        name: "strip-bom",
+        transform(code, id) {
+          return stripBom(code);
+        },
+      },
     ],
     build: { assetsInlineLimit: 0 },
     optimizeDeps: {
       include: ["@shopify/app-bridge-react", "@shopify/polaris"],
-      // exclude not required now but can keep if you used before
       exclude: ["@shopify/polaris/locales/en.json"],
     },
   });
