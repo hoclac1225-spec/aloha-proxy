@@ -1,37 +1,17 @@
-// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// Model hiện tại
-model Session {
-  id            String    @id @default(cuid())
-  shop          String
-  state         String
-  isOnline      Boolean   @default(false)
-  scope         String?
-  expires       DateTime?
-  accessToken   String
-  userId        BigInt?
-  firstName     String?
-  lastName      String?
-  email         String?
-  accountOwner  Boolean   @default(false)
-  locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
-}
-
-// Model mới cho Onboard API
-model Onboard {
-  id        Int      @id @default(autoincrement())
-  name      String
+/*
+  Thêm model của bạn ở đây. Ví dụ nhỏ:
+*/
+model User {
+  id        String   @id @default(cuid())
   email     String   @unique
-  phone     String
   createdAt DateTime @default(now())
 }
