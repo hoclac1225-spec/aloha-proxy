@@ -7,11 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/*
-  Thêm model của bạn ở đây. Ví dụ nhỏ:
-*/
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  createdAt DateTime @default(now())
+  id    String @id @default(cuid())
+  email String @unique
+  name  String?
 }
