@@ -1,14 +1,16 @@
-generator client {
-  provider = "prisma-client-js"
-}
+# ở root repo, nơi có prisma/schema.prisma
+# cài prisma nếu cần
+npm install -D prisma
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+# tạo migration dev (sẽ tạo thư mục prisma/migrations/<timestamp>_init)
+npx prisma migrate dev --name init
 
-model User {
-  id    String @id @default(cuid())
-  email String @unique
-  name  String?
-}
+# hoặc nếu bạn chỉ muốn tạo migration files không apply:
+# npx prisma migrate diff ... (advanced)
+# generate client
+npx prisma generate
+
+# commit vào git
+git add prisma/schema.prisma prisma/migrations
+git commit -m "chore(prisma): add migrations for initial schema"
+git push origin main
