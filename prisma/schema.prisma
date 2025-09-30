@@ -1,16 +1,19 @@
-# ở root repo, nơi có prisma/schema.prisma
-# cài prisma nếu cần
-npm install -D prisma
+# 1. Ở root repo, nơi có prisma/schema.prisma
+# 2. Cài Prisma CLI nếu chưa cài
+npm install -D prisma @prisma/client
 
-# tạo migration dev (sẽ tạo thư mục prisma/migrations/<timestamp>_init)
+# 3. Tạo migration dev (sẽ tạo thư mục prisma/migrations/<timestamp>_init)
+# Lưu ý: cần set DATABASE_URL trong file .env trước khi chạy
 npx prisma migrate dev --name init
 
-# hoặc nếu bạn chỉ muốn tạo migration files không apply:
-# npx prisma migrate diff ... (advanced)
-# generate client
+# 4. Nếu bạn chỉ muốn tạo migration files mà không apply lên DB:
+# npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/<timestamp>_init/migration.sql
+# (phần advanced, tuỳ nhu cầu)
+
+# 5. Generate Prisma Client
 npx prisma generate
 
-# commit vào git
+# 6. Commit migration và schema lên git
 git add prisma/schema.prisma prisma/migrations
 git commit -m "chore(prisma): add migrations for initial schema"
 git push origin main
