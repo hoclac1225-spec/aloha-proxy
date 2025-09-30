@@ -2,7 +2,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# copy package.json và package-lock.json, cài dev deps
+# copy package.json và cài dev deps
 COPY package*.json ./
 RUN npm ci
 
@@ -10,11 +10,11 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# --- final/runtime ---
+# --- runner/runtime ---
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Thiết lập biến môi trường DATABASE_URL, có thể truyền khi build
+# thiết lập biến môi trường database
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 
@@ -22,14 +22,18 @@ ENV DATABASE_URL=$DATABASE_URL
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-# copy build, public và prisma schema từ builder
+# copy build, public và prisma từ builder
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
-# Chạy migrate khi container start, tránh lỗi lúc build
+# copy entrypoint
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
+# expose port
 EXPOSE 3000
-CMD ["./entrypoint.sh"]
+
+# chạy entrypoint khi container start
+ENTRYPOINT ["./entrypoint.sh"]
+
