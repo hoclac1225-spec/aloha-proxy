@@ -46,3 +46,5 @@ ENV PORT=10000
 
 # Start app
 CMD ["npm", "run", "docker-start"]
+# ...
+ENV DEBUG=vite:*,remix:*,rollup:*
