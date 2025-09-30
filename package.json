@@ -11,7 +11,7 @@
     "deploy": "shopify app deploy",
     "config:use": "shopify app config use",
     "env": "shopify app env",
-    "start": "remix-serve ./build/server/index.cjs",
+    "start": "remix-serve ./build/server/index.js",
     "docker-start": "npm run setup && npm run start",
     "setup": "[ -f prisma/schema.prisma ] && prisma generate && prisma migrate deploy || echo \"No prisma schema, skipping prisma setup\"",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
