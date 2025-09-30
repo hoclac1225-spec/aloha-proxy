@@ -1,7 +1,6 @@
 // vite.config.js
-import fs from "fs";
 import path from "path";
-
+import fs from "fs";
 import { vitePlugin as remix } from "@remix-run/dev";
 import { installGlobals } from "@remix-run/node";
 import { defineConfig, loadEnv } from "vite";
@@ -11,53 +10,36 @@ import stripBom from "strip-bom";
 
 installGlobals({ nativeFetch: true });
 
-/** Debug plugin: log khi JSON trong thư mục "locales" được load/transform */
 function debugJsonLoadPlugin() {
-  const outFile = path.resolve(process.cwd(), "debug-json-transform.log");
-  // ensure log file exists (appendFileSync will create if missing, but write header first run)
-  try {
-    if (!fs.existsSync(outFile)) {
-      fs.writeFileSync(outFile, `[debug-json-transform log] ${new Date().toISOString()}\n\n`);
-    }
-  } catch (e) {
-    /* ignore */
-  }
-
   return {
     name: "debug-json-load",
     enforce: "pre",
-    buildStart() {
-      console.log("🔧 debug-json-load plugin active — logging to", outFile);
-    },
     load(id) {
-      // id may be absolute path; canonicalize to forward slashes for matching
-      const normalized = id.replace(/\\/g, "/");
-      if (normalized.includes("/locales/") && normalized.endsWith(".json")) {
-        console.log(`🔍 [DEBUG-load] id = ${id}`);
-        try {
-          const stat = fs.statSync(id);
-          console.log(`    size=${stat.size} bytes`);
-        } catch (e) {
-          // ignore
-        }
+      // id thường là đường dẫn tuyệt đối - log khi gặp locales/*.json
+      if (id.includes(`${path.sep}locales${path.sep}`) && id.endsWith(".json")) {
+        console.log("🔍 [DEBUG-load] id =", id);
       }
       return null;
     },
     transform(code, id) {
-      const normalized = id.replace(/\\/g, "/");
-      if (normalized.includes("/locales/") && normalized.endsWith(".json")) {
-        const head = code.slice(0, 1000); // preview up to 1000 chars
+      if (id.includes(`${path.sep}locales${path.sep}`) && id.endsWith(".json")) {
         console.log("🔍 [DEBUG-transform] id =", id);
-        console.log("🔍 [DEBUG-code-preview] first 200 chars:\n", head.slice(0, 200).replace(/\n/g, "\\n"));
-
-        // Append to log file with timestamp and file path
+        console.log("🔍 [DEBUG-code-preview] first 200 chars:\n", code.slice(0, 200));
+        try {
+          // attempt parse to show parse error early in build logs
+          JSON.parse(code);
+          console.log("🔍 [DEBUG-transform] JSON.parse OK for", id);
+        } catch (e) {
+          console.error("❌ [DEBUG-transform] JSON.parse ERROR for", id, ":", e.message);
+        }
+        const out = path.resolve(process.cwd(), "debug-json-transform.log");
         try {
           fs.appendFileSync(
-            outFile,
-            `\n[${new Date().toISOString()}] ${id}\n---first 1000 chars---\n${head}\n---end---\n`
+            out,
+            `\n[${new Date().toISOString()}] ${id}\n${code.slice(0, 1000)}\n---\n`
           );
         } catch (e) {
-          console.error("⚠️ Failed to write debug log:", e && e.message);
+          console.error("Could not write debug-json-transform.log:", e.message);
         }
       }
       return null;
@@ -88,6 +70,7 @@ export default ({ mode }) => {
     resolve: {
       alias: [
         {
+          // nếu bạn giữ alias này, kiểm tra file thay thế tồn tại (app/locales/en.js)
           find: "@shopify/polaris/locales/en.json",
           replacement: path.resolve(__dirname, "app/locales/en.js"),
         },
@@ -108,7 +91,7 @@ export default ({ mode }) => {
       fs: { allow: ["app", "node_modules"] },
     },
     plugins: [
-      // debug plugin first so we see raw loads/transforms before other plugins touch file
+      // our debug plugin runs first (enforce: "pre")
       debugJsonLoadPlugin(),
 
       remix({
@@ -124,15 +107,13 @@ export default ({ mode }) => {
       }),
 
       tsconfigPaths(),
-
-      // rollup json plugin used by Vite — keep namedExports false to avoid named export conversion
+      // rollup json plugin - keep namedExports false to avoid named export parsing
       json({ namedExports: false, esModule: true }),
 
-      // --- strip BOM plugin ---
+      // strip BOM plugin
       {
         name: "strip-bom",
         transform(code, id) {
-          // only apply to text files; strip-bom returns original if none
           return stripBom(code);
         },
       },
