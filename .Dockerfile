@@ -3,8 +3,12 @@
 # ===============================
 FROM node:20-alpine AS builder
 
-# Thư mục làm việc
 WORKDIR /app
+
+# Cho phép truyền build-time debug (mặc định rỗng)
+ARG BUILD_DEBUG=""
+# Nếu BUILD_DEBUG được truyền, export cho các bước tiếp theo (sẽ ảnh hưởng tới RUN npm run build)
+ENV DEBUG=${BUILD_DEBUG}
 
 # Copy package.json & package-lock.json
 COPY package*.json ./
@@ -15,13 +19,13 @@ RUN npm ci
 # Copy toàn bộ source code
 COPY . .
 
-# Build Remix app
+# Build Remix app (DEBUG sẽ có hiệu lực trong bước này nếu BUILD_DEBUG được thiết lập)
 RUN npm run build
 
 # ===============================
 # Stage 2: Production
 # ===============================
-FROM node:20-alpine
+FROM node:20-alpine AS runtime
 
 WORKDIR /app
 
@@ -38,13 +42,8 @@ COPY --from=builder /app/build ./build
 COPY --from=builder /app/remix.config.js ./remix.config.js
 COPY --from=builder /app/public ./public
 
-# Thiết lập biến môi trường Render (bạn có thể set trong dashboard Render)
-# ENV SHOPIFY_APP_URL=https://aloha-proxy.onrender.com
-
-# Port mặc định Render
+# Port mặc định
 ENV PORT=10000
 
-# Start app
+# Start app (đảm bảo script này tồn tại trong package.json)
 CMD ["npm", "run", "docker-start"]
-# ...
-ENV DEBUG=vite:*,remix:*,rollup:*
