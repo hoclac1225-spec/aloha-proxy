@@ -1,6 +1,4 @@
-# ===============================
-# Stage 1: Build
-# ===============================
+# --- builder ---
 FROM node:20-alpine AS builder
 WORKDIR /app
 
@@ -8,25 +6,26 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-ENV NODE_ENV=production
 RUN npm run build
 
-# ===============================
-# Stage 2: Production
-# ===============================
-FROM node:20-alpine
+# --- final/runtime ---
+FROM node:20-alpine AS runner
 WORKDIR /app
 
+# copy package.json then install production deps
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-# Copy built artifacts
+# copy build and public from builder
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/public ./public
 
-# If you really need remix.config.js at runtime, uncomment the next line and
-# ensure remix.config.js is included in the repo and present in builder stage:
-# COPY --from=builder /app/remix.config.js ./remix.config.js  # removed: remix.config.js not needed at runtime
+# copy prisma schema so we can run prisma generate in final image
+COPY --from=builder /app/prisma ./prisma
 
-ENV PORT=10000
-CMD ["npm", "run", "docker-start"]
+# generate prisma client if schema exists
+RUN if [ -f prisma/schema.prisma ]; then npx prisma generate; fi
+
+# port and start
+EXPOSE 3000
+CMD ["npm", "run", "start"]
