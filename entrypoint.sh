@@ -1,10 +1,14 @@
 #!/bin/sh
-# Chạy migration trước khi start app
+# entrypoint.sh
+
+# generate Prisma client
 if [ -f prisma/schema.prisma ]; then
-  echo "Running Prisma migrations..."
+  echo "Generating Prisma client..."
+  npx prisma generate
+  echo "Deploying migrations..."
   npx prisma migrate deploy
 fi
 
-# Start app
+# start app
 echo "Starting app..."
 npm run start
