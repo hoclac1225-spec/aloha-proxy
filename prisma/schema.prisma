@@ -1,19 +1,57 @@
-# 1. Ở root repo, nơi có prisma/schema.prisma
-# 2. Cài Prisma CLI nếu chưa cài
-npm install -D prisma @prisma/client
+// prisma/schema.prisma
 
-# 3. Tạo migration dev (sẽ tạo thư mục prisma/migrations/<timestamp>_init)
-# Lưu ý: cần set DATABASE_URL trong file .env trước khi chạy
-npx prisma migrate dev --name init
+// Kết nối database
+datasource db {
+  provider = "postgresql" // có thể đổi sang "sqlite" nếu dev tạm
+  url      = env("DATABASE_URL")
+}
 
-# 4. Nếu bạn chỉ muốn tạo migration files mà không apply lên DB:
-# npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/<timestamp>_init/migration.sql
-# (phần advanced, tuỳ nhu cầu)
+// Generator Prisma Client
+generator client {
+  provider = "prisma-client-js"
+}
 
-# 5. Generate Prisma Client
-npx prisma generate
+// Model người dùng
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+}
 
-# 6. Commit migration và schema lên git
-git add prisma/schema.prisma prisma/migrations
-git commit -m "chore(prisma): add migrations for initial schema"
-git push origin main
+// Model sản phẩm
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orders      OrderItem[]
+}
+
+// Model đơn hàng
+model Order {
+  id        Int        @id @default(autoincrement())
+  user      User       @relation(fields: [userId], references: [id])
+  userId    Int
+  total     Float
+  status    String     @default("pending")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  items     OrderItem[]
+}
+
+// Model chi tiết đơn hàng
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   Int
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int      @default(1)
+  price     Float
+}
