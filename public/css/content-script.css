@@ -1,0 +1,35 @@
+/* content-script.css - Styles cho phần inject vào page */
+
+.cs-highlight {
+    background-color: #ffeaa7;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+.cs-button {
+    background-color: #00a8ff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.cs-button:hover {
+    background-color: #0097e6;
+}
+
+.cs-container {
+    border: 1px solid #dcdde1;
+    padding: 10px;
+    border-radius: 6px;
+    background-color: #f1f2f6;
+    margin-bottom: 10px;
+}
+
+.cs-text {
+    font-size: 13px;
+    color: #2f3640;
+}
