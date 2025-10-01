@@ -6,7 +6,11 @@ export async function callAPI(url, method = "GET", body = null) {
       body: body ? JSON.stringify(body) : undefined,
     });
 
-    // Nếu response không phải JSON
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      return { success: false, error: `HTTP ${res.status}: ${text}` };
+    }
+
     const data = await res.json().catch(() => null);
 
     return { success: true, data };
