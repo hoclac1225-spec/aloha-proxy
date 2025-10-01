@@ -1,44 +1,66 @@
 // app/routes/api.onboard.jsx
-import db from "../db.server";
-import { json } from "@remix-run/node";
+import { PrismaClient } from "@prisma/client";
 
-/**
- * POST /api/onboard
- * Expect JSON body with { name, email, phone }
- */
-export const action = async ({ request }) => {
+const prisma = new PrismaClient();
+
+export async function action({ request }) {
   try {
+    // Try parse JSON body first
+    let data;
     const contentType = request.headers.get("content-type") || "";
-    let body;
+
     if (contentType.includes("application/json")) {
-      body = await request.json();
+      try {
+        data = await request.json();
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false, error: "Invalid JSON payload" }), { status: 400 });
+      }
     } else {
+      // fallback: try formData (multipart/form-data or urlencoded)
       const form = await request.formData();
-      body = {};
-      for (const [k, v] of form.entries()) body[k] = v;
+      data = {};
+      for (const [k, v] of form.entries()) {
+        if (k === "payload") {
+          // payload might be JSON string — attempt parse
+          try {
+            data.payload = typeof v === "string" ? JSON.parse(v) : v;
+          } catch (e) {
+            data.payload = v;
+          }
+        } else {
+          data[k] = v;
+        }
+      }
     }
 
-    const { name, email, phone } = body;
-    if (!name || !email) {
-      return json({ ok: false, error: "name and email are required" }, { status: 400 });
+    // Ensure payload exists (Prisma Json column expects a value)
+    if (data.payload == null) {
+      data.payload = {};
     }
 
-    const created = await db.onboard.create({
+    // Basic validation (adjust as needed)
+    if (!data.name || !data.email) {
+      return new Response(JSON.stringify({ ok: false, error: "Missing required fields: name or email" }), { status: 400 });
+    }
+
+    // Create record — adapt model name and fields to your prisma schema
+    const created = await prisma.onboard.create({
       data: {
-        name: String(name),
-        email: String(email),
-        phone: phone ? String(phone) : "",
+        name: String(data.name),
+        email: String(data.email),
+        phone: String(data.phone || ""),
+        payload: data.payload, // prisma Json
       },
     });
 
-    console.log("/api/onboard saved:", created);
-    return json({ ok: true, received: body, created }, { status: 200 });
+    return new Response(JSON.stringify({ ok: true, data: created }), { status: 200 });
   } catch (err) {
-    console.error("api.onboard error:", err);
-    return json({ ok: false, error: err.message }, { status: 500 });
+    console.error("api.onboard server error:", err);
+    // Do NOT leak internals in production; safe message here
+    const message = err && err.message ? err.message : "Server error";
+    return new Response(JSON.stringify({ ok: false, error: message }), { status: 500 });
+  } finally {
+    // optional: avoid too many clients in serverless environment
+    // await prisma.$disconnect(); // only if you're creating/disposing frequently
   }
-};
-
-export const loader = async () => {
-  return json({ message: "POST to /api/onboard" });
-};
+}
