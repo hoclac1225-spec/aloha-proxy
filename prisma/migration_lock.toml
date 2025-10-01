@@ -1,0 +1,5 @@
+# Prisma migration lock file
+# Do not edit manually unless you know what you are doing
+
+provider = "postgresql"
+status = "unlocked"
