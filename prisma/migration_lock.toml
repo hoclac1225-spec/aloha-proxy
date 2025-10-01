@@ -1,5 +1,5 @@
-# Prisma migration lock file
-# Do not edit manually unless you know what you are doing
+# Migration lock file for Prisma
+# Giữ trạng thái khóa migration để tránh trùng lặp
 
 provider = "postgresql"
 status = "unlocked"
