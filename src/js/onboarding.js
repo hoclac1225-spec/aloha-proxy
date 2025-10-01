@@ -1,6 +1,4 @@
 // src/js/onboarding.js
-// Minimal, robust client onboarding helper (no JSX, no weird chars)
-
 import { callAPI } from "./api.js";
 import { validateUser } from "./validation.js";
 
@@ -9,7 +7,6 @@ export function showNotification(message, type = "info") {
     const notif = document.createElement("div");
     notif.className = `onboarding-notif onboarding-${type}`;
     notif.textContent = String(message || "");
-    // Minimal inline styles so it always shows
     notif.style.position = "fixed";
     notif.style.right = "16px";
     notif.style.top = "16px";
@@ -31,8 +28,6 @@ export function showNotification(message, type = "info") {
       try { notif.remove(); } catch (e) {}
     }, 4000);
   } catch (e) {
-    // fallback
-    // eslint-disable-next-line no-console
     console.warn("showNotification fallback:", message, e);
   }
 }
@@ -62,7 +57,6 @@ export function showLoading(show = true) {
       spinner.style.borderRadius = "50%";
       spinner.style.animation = "onboarding-spin 1s linear infinite";
 
-      // inject simple keyframes if missing
       if (!document.getElementById("onboarding-spinner-style")) {
         const s = document.createElement("style");
         s.id = "onboarding-spinner-style";
@@ -76,42 +70,40 @@ export function showLoading(show = true) {
 
     overlay.style.display = show ? "flex" : "none";
   } catch (e) {
-    // eslint-disable-next-line no-console
     console.warn("showLoading fallback:", e);
   }
 }
 
-/**
- * startOnboarding
- * - validateUser must be present in ./validation.js
- * - uses callAPI from ./api.js
- * - ensures payload exists
- */
 export async function startOnboarding(userData, endpointOrBase = "/api/onboard") {
-  // lightweight guard
+  console.log("[onboarding] startOnboarding called with:", userData);
+
   if (!userData || typeof userData !== "object") {
-    showNotification("Invalid user data", "error");
-    return { success: false, error: "Invalid userData" };
+    const msg = "Invalid userData provided to startOnboarding";
+    showNotification(msg, "error");
+    console.warn("[onboarding]", msg);
+    return { success: false, error: msg };
   }
 
+  // validate
+  let validationError = null;
   try {
-    const validationError = validateUser ? validateUser(userData) : null;
-    if (validationError) {
-      showNotification(validationError, "error");
-      return { success: false, error: validationError };
-    }
+    validationError = typeof validateUser === "function" ? validateUser(userData) : null;
   } catch (e) {
-    console.error("[onboarding] validateUser threw", e);
-    showNotification("Validation error", "error");
-    return { success: false, error: e && e.message ? e.message : String(e) };
+    console.error("[onboarding] validateUser threw:", e);
+    validationError = e && e.message ? e.message : String(e);
   }
 
-  // ensure payload exists so Prisma required field isn't missing
+  if (validationError) {
+    showNotification(validationError, "error");
+    console.warn("[onboarding] Validation failed:", validationError);
+    return { success: false, error: validationError };
+  }
+
+  // ensure payload exists (prevents prisma missing required payload)
   if (userData.payload === undefined || userData.payload === null) {
     userData.payload = {};
   }
 
-  // resolve endpoint simply
   const runtimeBase = (typeof window !== "undefined" && window.SHOPIFY_APP_URL)
     ? String(window.SHOPIFY_APP_URL).replace(/\/+$/, "")
     : null;
@@ -120,34 +112,53 @@ export async function startOnboarding(userData, endpointOrBase = "/api/onboard")
     ? endpointOrBase
     : runtimeBase ? runtimeBase + endpointOrBase : endpointOrBase;
 
+  console.log("[onboarding] resolved endpoint:", endpoint);
+
   if (!endpoint || typeof endpoint !== "string") {
-    const msg = "Invalid endpoint resolved: " + String(endpoint);
-    showNotification(msg, "error");
-    return { success: false, error: msg };
+    const errMsg = "Invalid endpoint resolved for onboarding: " + String(endpoint);
+    console.error("[onboarding]", errMsg);
+    showNotification(errMsg, "error");
+    return { success: false, error: errMsg };
   }
 
   showLoading(true);
   try {
-    const resp = await callAPI(endpoint, "POST", userData, { asFormData: true, timeoutMs: 20000 });
+    let response;
+    try {
+      response = await callAPI(endpoint, "POST", userData, { timeoutMs: 20000 });
+    } catch (innerErr) {
+      // normalize thrown value
+      const message = innerErr && innerErr.message ? innerErr.message : String(innerErr || "callAPI error");
+      console.error("[onboarding] callAPI threw:", innerErr);
+      showLoading(false);
+      showNotification(message, "error");
+      return { success: false, error: message };
+    }
+
     showLoading(false);
+    console.log("[onboarding] API response (raw):", response);
 
-    if (!resp || typeof resp !== "object") {
-      showNotification("Invalid server response", "error");
-      return { success: false, error: "Invalid server response", raw: resp };
+    if (!response || typeof response !== "object") {
+      const msg = "Invalid response from server (not an object)";
+      console.error("[onboarding]", msg, response);
+      showNotification(msg, "error");
+      return { success: false, error: msg, raw: response };
     }
 
-    if (resp.ok) {
-      showNotification("Onboarding successful", "success");
+    if (response.ok === true) {
+      showNotification("Onboarding successful!", "success");
+      console.info("[onboarding] Onboarding completed successfully.");
     } else {
-      const errMsg = (resp.data && (resp.data.error || resp.data.message)) || resp.error || `Status ${resp.status}`;
+      const errMsg = (response.error || (response.data && (response.data.error || response.data.message)) || "Onboarding failed");
       showNotification(errMsg, "error");
+      console.warn("[onboarding] Onboarding failed:", response);
     }
 
-    return resp;
+    return response;
   } catch (err) {
     showLoading(false);
+    console.error("[onboarding] Unexpected exception:", err);
     const msg = err && err.message ? err.message : String(err || "Unknown error");
-    console.error("[onboarding] exception:", err);
     showNotification(msg, "error");
     return { success: false, error: msg };
   }
