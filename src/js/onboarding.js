@@ -1,80 +1,64 @@
 // src/js/onboarding.js
+// Improved onboarding client: validation, robust error normalization, default payload,
+// and global unhandledrejection logging to help detect "Uncaught (in promise) undefined".
+
 import { callAPI } from "./api.js";
+import { validateUser } from "./validation.js"; // keep your existing validation module
 
-// Nếu bạn có file validateUser / showNotification / showLoading khác,
-// import tương ứng. Nếu không, file này có các fallback đơn giản.
-function defaultValidateUser(data) {
-  if (!data) return "Missing user data";
-  if (!data.name || typeof data.name !== "string") return "Missing name";
-  if (!data.email || typeof data.email !== "string") return "Missing email";
-  return null;
-}
-
+// UI helpers (keep or replace with your existing UI notification functions)
 export function showNotification(message, type = "info") {
-  try {
-    const notif = document.createElement("div");
-    notif.className = `onboarding-notif onboarding-${type}`;
-    notif.textContent = message;
-    Object.assign(notif.style, {
-      position: "fixed",
-      right: "16px",
-      top: "16px",
-      zIndex: 99999,
-      background: "#222",
-      color: "#fff",
-      padding: "8px 12px",
-      borderRadius: "6px",
-      boxShadow: "0 6px 18px rgba(0,0,0,0.2)",
-    });
-    document.body.appendChild(notif);
-    setTimeout(() => notif.remove(), 4000);
-  } catch (e) {
-    // no DOM? ignore
-    console.warn("showNotification fallback:", e);
-  }
+  const notif = document.createElement("div");
+  notif.className = `onboarding-notif onboarding-${type}`;
+  notif.textContent = message;
+  document.body.appendChild(notif);
+  setTimeout(() => notif.remove(), 3000);
 }
 
 export function showLoading(show = true) {
-  try {
-    let overlay = document.getElementById("onboarding-loading-overlay");
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.id = "onboarding-loading-overlay";
-      overlay.className = "onboarding-loading-overlay";
-      Object.assign(overlay.style, {
-        position: "fixed",
-        inset: "0",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.4)",
-        zIndex: 99998,
-      });
-      overlay.innerHTML = `<div style="width:48px;height:48px;border-radius:50%;border:6px solid rgba(255,255,255,0.2);border-top-color:#fff;animation:spin 1s linear infinite"></div>
-      <style>
-      @keyframes spin { to { transform: rotate(360deg) } }
-      </style>`;
-      document.body.appendChild(overlay);
-    }
-    overlay.style.display = show ? "flex" : "none";
-  } catch (e) {
-    console.warn("showLoading fallback:", e);
+  let overlay = document.getElementById("onboarding-loading-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "onboarding-loading-overlay";
+    overlay.className = "onboarding-loading-overlay";
+    overlay.innerHTML = `<div class="spinner"></div>`;
+    document.body.appendChild(overlay);
   }
+  overlay.style.display = show ? "flex" : "none";
 }
 
-// If your repo already has a validateUser export, replace this default with import.
-const validateUser = defaultValidateUser;
+// Global unhandled rejection logger — helps find "undefined" rejections
+if (typeof window !== "undefined") {
+  window.addEventListener("unhandledrejection", (ev) => {
+    console.error("Global unhandledrejection captured:", ev.reason);
+    // Optionally show a UI notification for visibility in dev
+    // showNotification(`Unhandled rejection: ${String(ev.reason)}`, "error");
+  });
+}
 
+/**
+ * Start onboarding
+ * @param {Object} userData - { name, email, phone?, payload? }
+ * @param {string} endpointOrBase
+ * @returns {Promise<Object>}
+ */
 export async function startOnboarding(userData, endpointOrBase = "/api/onboard") {
   console.log("[onboarding] startOnboarding called with:", userData);
 
-  const validationError = validateUser(userData);
+  // Validate using your validation.js
+  const validationError = validateUser ? validateUser(userData) : null;
   if (validationError) {
     showNotification(validationError, "error");
     console.warn("[onboarding] Validation failed:", validationError);
     return { success: false, error: validationError };
   }
 
+  // Ensure payload exists (server expects payload Json column)
+  const bodyToSend = { ...userData };
+  if (bodyToSend.payload == null) {
+    bodyToSend.payload = {}; // default to empty object to satisfy Prisma Json field
+  }
+
+  // Resolve endpoint: if full URL provided, use it; else try runtime base
   const runtimeBase =
     typeof window !== "undefined" && window.SHOPIFY_APP_URL
       ? window.SHOPIFY_APP_URL.replace(/\/+$/, "")
@@ -97,13 +81,16 @@ export async function startOnboarding(userData, endpointOrBase = "/api/onboard")
   }
 
   showLoading(true);
+
   try {
     let response;
     try {
-      response = await callAPI(endpoint, "POST", userData, { timeoutMs: 20000 });
+      // send as JSON by default
+      response = await callAPI(endpoint, "POST", bodyToSend, { timeoutMs: 20000 });
     } catch (innerErr) {
-      console.error("[onboarding] callAPI threw:", innerErr);
+      // Normalize to Error and return structured failure
       const message = innerErr && innerErr.message ? innerErr.message : String(innerErr || "callAPI error");
+      console.error("[onboarding] callAPI threw:", innerErr);
       showLoading(false);
       showNotification(message, "error");
       return { success: false, error: message };
@@ -126,14 +113,16 @@ export async function startOnboarding(userData, endpointOrBase = "/api/onboard")
       const errMsg = response.error || response.message || "Onboarding failed";
       showNotification(errMsg, "error");
       console.warn("[onboarding] Onboarding failed:", response);
+      // keep returning response so caller can inspect
     }
 
     return response;
   } catch (err) {
+    // Global catch: always normalize to Error instance and return structured error
     showLoading(false);
-    console.error("[onboarding] Unexpected exception:", err);
-    const msg = err && err.message ? err.message : String(err || "Unknown error");
-    showNotification(msg, "error");
-    return { success: false, error: msg };
+    const normalized = err instanceof Error ? err : new Error(String(err || "Unknown error"));
+    console.error("[onboarding] Unexpected exception (normalized):", normalized, { raw: err, stack: normalized.stack });
+    showNotification(normalized.message, "error");
+    return { success: false, error: normalized.message };
   }
 }
