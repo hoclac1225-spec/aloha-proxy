@@ -1,0 +1,10 @@
+﻿{
+  "name": "Test User",
+  "email": "test@example.com",
+  "phone": "0123456789",
+  "payload": {
+    "shop": "aloha-test.myshopify.com",
+    "plan": "basic",
+    "features": ["read_products", "write_products"]
+  }
+}
