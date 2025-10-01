@@ -1,23 +1,30 @@
-// api.js - robust callAPI
+// api.js - supports JSON and FormData via opts.asFormData
 export async function callAPI(url, method = "GET", body = null, opts = {}) {
   const controller = new AbortController();
-  const timeoutMs = typeof opts.timeoutMs === "number" ? opts.timeoutMs : 15000; // 15s default
+  const timeoutMs = typeof opts.timeoutMs === "number" ? opts.timeoutMs : 15000;
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
+    // build headers; when sending FormData do NOT set Content-Type (browser fills boundary)
     const headers = { Accept: "application/json" };
-    if (body && !(body instanceof FormData)) {
+    if (!opts.asFormData && body && !(body instanceof FormData)) {
       headers["Content-Type"] = "application/json";
     }
-    // allow caller to add custom headers
     if (opts.headers && typeof opts.headers === "object") {
       Object.assign(headers, opts.headers);
     }
 
+    const fetchBody =
+      opts.asFormData && body && !(body instanceof FormData)
+        ? objectToFormData(body)
+        : body && !(body instanceof FormData) && !opts.asFormData
+        ? JSON.stringify(body)
+        : body;
+
     const res = await fetch(url, {
       method,
       headers,
-      body: body && !(body instanceof FormData) ? JSON.stringify(body) : body,
+      body: fetchBody,
       signal: controller.signal,
     });
 
@@ -26,18 +33,15 @@ export async function callAPI(url, method = "GET", body = null, opts = {}) {
     const status = res.status;
     const ok = res.ok === true;
 
-    // 204/205 No Content
     if (status === 204 || status === 205) {
       return { ok, status, data: null, error: ok ? null : `HTTP ${status}`, rawText: "" };
     }
 
     const ct = (res.headers.get("content-type") || "").toLowerCase();
-
     let rawText = null;
     let data = null;
     let parseError = null;
 
-    // Prefer JSON if content-type indicates; but also try-catch parse if content-type missing
     if (ct.includes("application/json")) {
       try {
         data = await res.json();
@@ -46,50 +50,45 @@ export async function callAPI(url, method = "GET", body = null, opts = {}) {
         rawText = await res.text().catch(() => null);
       }
     } else {
-      // try to read text first; if it looks like JSON, attempt parse
       rawText = await res.text().catch(() => null);
-      if (rawText) {
-        const trimmed = rawText.trim();
-        if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
-          try {
-            data = JSON.parse(trimmed);
-          } catch (e) {
-            parseError = `Failed to parse JSON from text response: ${String(e)}`;
-          }
-        }
+      const trimmed = rawText ? rawText.trim() : "";
+      if (trimmed && ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]")))) {
+        try { data = JSON.parse(trimmed); } catch (e) { parseError = `Failed to parse JSON from text response: ${String(e)}`; }
       }
     }
 
-    // Normalize result shape
-    const result = {
-      ok,
-      status,
-      data: data ?? null,
-      error: null,
-      rawText: rawText ?? null,
-    };
-
-    // If response status not ok, attach error info
+    const result = { ok, status, data: data ?? null, error: null, rawText: rawText ?? null };
     if (!ok) {
-      // If server returned structured error in data (common patterns)
-      const serverMessage =
-        (data && (data.error || data.message || data.msg)) ||
-        parseError ||
-        (rawText ? rawText : `HTTP ${status}`);
+      const serverMessage = (data && (data.error || data.message || data.msg)) || parseError || (rawText ? rawText : `HTTP ${status}`);
       result.error = serverMessage;
     } else if (parseError) {
-      // if 2xx but parse failed, surface parse error
       result.error = parseError;
     }
 
     return result;
   } catch (err) {
     clearTimeout(timeout);
-    // Normalize errors: AbortError -> timeout message
-    if (err && err.name === "AbortError") {
-      throw new Error("Request timed out");
-    }
-    // Network errors or other unexpected errors
+    if (err && err.name === "AbortError") throw new Error("Request timed out");
     throw err instanceof Error ? err : new Error(String(err));
   }
+}
+
+// helper: convert plain object to FormData (supports arrays, nested simple values as JSON)
+function objectToFormData(obj) {
+  const fd = new FormData();
+  Object.entries(obj || {}).forEach(([k, v]) => {
+    if (v === null || v === undefined) return;
+    // if file-like (has .name and is Blob/File) append directly
+    if (typeof v === "object" && (v instanceof Blob || (v.name && v.size))) {
+      fd.append(k, v);
+    } else if (Array.isArray(v)) {
+      // append arrays as multiple fields with same name
+      v.forEach(item => fd.append(k, typeof item === "object" ? JSON.stringify(item) : String(item)));
+    } else if (typeof v === "object") {
+      fd.append(k, JSON.stringify(v));
+    } else {
+      fd.append(k, String(v));
+    }
+  });
+  return fd;
 }
