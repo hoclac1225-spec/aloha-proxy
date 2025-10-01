@@ -1,5 +1,5 @@
 // src/js/api.js
-// Robust callAPI supporting JSON and FormData (no weird syntax)
+// Robust callAPI supporting JSON and FormData and always throwing/returning normalized Errors/objects.
 
 export async function callAPI(url, method = "GET", body = null, opts = {}) {
   const controller = new AbortController();
@@ -21,7 +21,6 @@ export async function callAPI(url, method = "GET", body = null, opts = {}) {
         ? JSON.stringify(body)
         : body;
 
-    // do the request
     const res = await fetch(url, {
       method,
       headers,
@@ -52,7 +51,6 @@ export async function callAPI(url, method = "GET", body = null, opts = {}) {
         rawText = await res.text().catch(() => null);
       }
     } else {
-      // not JSON: keep raw text and attempt best-effort parse
       rawText = await res.text().catch(() => null);
       const trimmed = rawText ? rawText.trim() : "";
       if (trimmed && ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]")))) {
@@ -83,8 +81,10 @@ export async function callAPI(url, method = "GET", body = null, opts = {}) {
   } catch (err) {
     clearTimeout(timeout);
     if (err && err.name === "AbortError") {
+      // throw a real Error instance with message
       throw new Error("Request timed out");
     }
+    // normalize thrown values
     throw err instanceof Error ? err : new Error(String(err));
   }
 }
