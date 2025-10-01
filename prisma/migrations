@@ -1,9 +1,0 @@
--- Initial migration
--- Tạo bảng ví dụ user
-
-CREATE TABLE "User" (
-    "id" SERIAL PRIMARY KEY,
-    "name" TEXT NOT NULL,
-    "email" TEXT UNIQUE NOT NULL,
-    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
