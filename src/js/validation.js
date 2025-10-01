@@ -1,14 +1,7 @@
-// validation.js
-
-export function validateUser(user) {
-  if (!user.name || user.name.trim() === '') {
-    return 'Name is required';
-  }
-  if (!user.email || !user.email.includes('@')) {
-    return 'Invalid email';
-  }
-  if (!user.phone || !/^\d{10,15}$/.test(user.phone)) {
-    return 'Invalid phone number';
-  }
-  return null; // hợp lệ
+export function validateUser(userData) {
+  if (!userData) return "User data is missing";
+  if (!userData.name || userData.name.trim() === "") return "Name is required";
+  if (!userData.email || userData.email.trim() === "") return "Email is required";
+  if (!userData.phone || userData.phone.trim() === "") return "Phone is required";
+  return null; // không lỗi
 }
