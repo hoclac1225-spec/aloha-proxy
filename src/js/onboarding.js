@@ -1,5 +1,44 @@
+// startOnboarding.js
 import { validateUser } from "./validation.js";
 import { callAPI } from "./api.js";
+
+// Import CSS để áp dụng style
+import "./css/style.css";
+import "./content-script.css";
+
+/**
+ * Hiển thị thông báo tạm thời trên trang
+ * @param {string} message - nội dung thông báo
+ * @param {"error"|"success"|"info"} type - kiểu thông báo
+ */
+function showNotification(message, type = "info") {
+  const notif = document.createElement("div");
+  notif.className = `onboarding-notif onboarding-${type}`;
+  notif.textContent = message;
+
+  // Thêm vào body
+  document.body.appendChild(notif);
+
+  // Tự động ẩn sau 3 giây
+  setTimeout(() => {
+    notif.remove();
+  }, 3000);
+}
+
+/**
+ * Hiển thị loading overlay
+ */
+function showLoading(show = true) {
+  let overlay = document.getElementById("onboarding-loading-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "onboarding-loading-overlay";
+    overlay.className = "onboarding-loading-overlay";
+    overlay.innerHTML = `<div class="spinner"></div>`;
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = show ? "flex" : "none";
+}
 
 /**
  * startOnboarding
@@ -11,6 +50,7 @@ export async function startOnboarding(userData, endpointOrBase = "/api/onboard")
   const validationError = validateUser(userData);
   if (validationError) {
     console.error("[onboarding] Validation Error:", validationError);
+    showNotification(validationError, "error");
     return { success: false, error: validationError };
   }
 
@@ -39,23 +79,29 @@ export async function startOnboarding(userData, endpointOrBase = "/api/onboard")
   console.log("[onboarding] resolved endpoint:", endpoint);
 
   // 3. Gọi API và handle lỗi
+  showLoading(true);
   try {
     const response = await callAPI(endpoint, "POST", userData);
+    showLoading(false);
     console.log("[onboarding] response:", response);
 
     if (!response) {
+      showNotification("No response from server", "error");
       return { success: false, error: "No response from callAPI" };
     }
 
-    // Nếu API trả về định dạng chuẩn { success, data }
     if (typeof response === "object" && "success" in response) {
+      if (response.success) showNotification("Onboarding successful!", "success");
+      else showNotification(response.error || "Onboarding failed", "error");
       return response;
     }
 
-    // Nếu API trả về dữ liệu raw
+    showNotification("Onboarding completed!", "success");
     return { success: true, data: response };
   } catch (err) {
+    showLoading(false);
     console.error("[onboarding] Exception:", err);
+    showNotification(err?.message || "Unknown error", "error");
     return { success: false, error: err?.message || "Unknown error" };
   }
 }
