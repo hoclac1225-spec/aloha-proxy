@@ -3,8 +3,8 @@ import { validateUser } from "./validation.js";
 import { callAPI } from "./api.js";
 
 // Import CSS để áp dụng style
-import "./css/style.css";
-import "./content-script.css";
+import "../../app/styles/style.css";
+import "../../app/styles/content-script.css";
 
 /**
  * Hiển thị thông báo tạm thời trên trang
