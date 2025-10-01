@@ -20,3 +20,4 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export { prisma };
+export default prisma; // thêm default export để tương thích với cả 2 kiểu import
