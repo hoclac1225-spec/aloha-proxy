@@ -1,11 +1,10 @@
-// app/routes/api/onboard/index.jsx
-import db from "../../db.server";
 import { json } from "@remix-run/node";
+import { PrismaClient } from "@prisma/client";
 
-/**
- * POST /api/onboard
- * From this file the relative path to app/db.server.js is ../../db.server
- */
+const prisma = new PrismaClient({
+  log: ["query", "info", "warn", "error"]
+});
+
 export const action = async ({ request }) => {
   try {
     const contentType = request.headers.get("content-type") || "";
@@ -18,15 +17,20 @@ export const action = async ({ request }) => {
       for (const [k, v] of form.entries()) body[k] = v;
     }
 
-    // N?u mu?n luu v�o DB (b? comment khi d� c� model Onboard)
-    // const created = await db.onboard.create({ data: { payload: JSON.stringify(body) } });
+    console.log("[api/onboard] received body:", body);
 
-    console.log("/api/onboard received:", body);
+    // Ghi log ra file (debug dài hạn)
+    // import fs from "fs";
+    // fs.appendFileSync("onboard.log", JSON.stringify(body) + "\n");
 
-    return json({ ok: true, received: body }, { status: 200 });
+    // Nếu muốn thao tác DB, bỏ comment
+    // const created = await prisma.user.create({ data: { name: body.name, email: body.email, password: "temp123" } });
+    // console.log("[api/onboard] created user:", created);
+
+    return json({ ok: true, received: body });
   } catch (err) {
-    console.error("api.onboard error:", err);
-    return json({ ok: false, error: err.message }, { status: 500 });
+    console.error("[api/onboard] Exception:", err);
+    return json({ ok: false, error: err.message });
   }
 };
 
