@@ -1,4 +1,4 @@
-import { callAPI } from "./api.js"; // sử dụng version chuẩn
+import { callAPI } from "./api.js"; 
 import { validateUser } from "./validation.js";
 
 export function showNotification(message, type = "info") {
@@ -22,19 +22,21 @@ export function showLoading(show = true) {
 }
 
 export async function startOnboarding(userData, endpointOrBase = "/api/onboard") {
+  console.log("[onboarding] startOnboarding called with:", userData);
+
   const validationError = validateUser(userData);
   if (validationError) {
     showNotification(validationError, "error");
+    console.warn("[onboarding] Validation failed:", validationError);
     return { success: false, error: validationError };
   }
 
-  // Resolve endpoint
   const runtimeBase =
     typeof window !== "undefined" && window.SHOPIFY_APP_URL
       ? window.SHOPIFY_APP_URL.replace(/\/+$/, "")
       : null;
 
-  let endpoint = endpointOrBase.startsWith("http")
+  const endpoint = endpointOrBase.startsWith("http")
     ? endpointOrBase
     : runtimeBase
     ? runtimeBase + endpointOrBase
@@ -46,17 +48,19 @@ export async function startOnboarding(userData, endpointOrBase = "/api/onboard")
   try {
     const response = await callAPI(endpoint, "POST", userData);
     showLoading(false);
-    console.log("[onboarding] response:", response);
+    console.log("[onboarding] API response:", response);
 
     if (!response || typeof response !== "object") {
       showNotification("No response from server", "error");
       return { success: false, error: "No response from callAPI" };
     }
 
-    if (response.success) {
+    if (response.ok) {
       showNotification("Onboarding successful!", "success");
+      console.info("[onboarding] Onboarding completed successfully.");
     } else {
       showNotification(response.error || "Onboarding failed", "error");
+      console.warn("[onboarding] Onboarding failed:", response.error);
     }
 
     return response;
