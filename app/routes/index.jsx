@@ -1,94 +1,47 @@
-// app/routes/api/onboard/index.jsx
-import { json } from "@remix-run/node";
-import { prisma } from "../../db.server"; // relative import -> tránh alias resolution
+// app/routes/index.jsx
+import { useEffect, useState } from "react";
+import { useLoaderData } from "@remix-run/react";
+import { startOnboarding } from "../../src/js/onboarding.js"; // nếu file thực sự ở src/js
 
-const MAX_PAYLOAD_SIZE = 1024 * 1024 * 2; // 2MB guard
+export const loader = () => {
+  return {
+    shopifyUrl: process.env.SHOPIFY_APP_URL || "",
+  };
+};
 
-async function readRequestBody(request) {
-  const contentType = (request.headers.get("content-type") || "").toLowerCase();
-  if (contentType.includes("application/json")) {
-    // safe JSON parse
-    try {
-      return await request.json();
-    } catch (e) {
-      throw new Error("INVALID_JSON");
+export default function Index() {
+  const { shopifyUrl: loaderUrl } = useLoaderData();
+  const [shopifyUrl, setShopifyUrl] = useState(loaderUrl);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.SHOPIFY_APP_URL) {
+      setShopifyUrl(window.SHOPIFY_APP_URL);
     }
-  } else {
-    // Try formData -> object
-    const form = await request.formData();
-    const obj = {};
-    for (const [k, v] of form.entries()) obj[k] = v;
-    return obj;
-  }
+  }, []);
+
+  const handleOnboard = async () => {
+    const userData = {
+      name: "Lạc Học",
+      email: "hoclac1225@gmail.com",
+      phone: "0327525280",
+    };
+
+    try {
+      console.log("[index] Starting onboarding with endpoint base:", shopifyUrl);
+      const res = await startOnboarding(userData, shopifyUrl);
+      console.log("[index] Onboarding result:", res);
+      alert(JSON.stringify(res));
+    } catch (err) {
+      console.error("[index] Onboarding error:", err);
+      alert("Có lỗi xảy ra khi onboarding!");
+    }
+  };
+
+  return (
+    <div>
+      <h1>Shopify App đang chạy!</h1>
+      <p>App URL: {shopifyUrl}</p>
+      <button onClick={handleOnboard}>Bắt đầu Onboarding</button>
+    </div>
+  );
 }
-
-// POST /api/onboard
-export const action = async ({ request }) => {
-  try {
-    console.log("[api/onboard] incoming request:", {
-      method: request.method,
-      url: request.url,
-      headers: {
-        "content-type": request.headers.get("content-type"),
-        // other headers if needed
-      },
-    });
-
-    // Optional: guard content-length (if provided)
-    const contentLength = request.headers.get("content-length");
-    if (contentLength && Number(contentLength) > MAX_PAYLOAD_SIZE) {
-      console.warn("[api/onboard] Payload too large:", contentLength);
-      return json({ ok: false, error: "PAYLOAD_TOO_LARGE" }, { status: 413 });
-    }
-
-    const body = await readRequestBody(request);
-    console.log("[api/onboard] Received payload:", body);
-
-    // Try to persist if prisma Onboard model exists
-    let created = null;
-    try {
-      if (prisma && prisma.onboard && typeof prisma.onboard.create === "function") {
-        // Prisma expects JSON for Json fields; body is object -> good
-        created = await prisma.onboard.create({
-          data: { payload: body },
-        });
-        console.log("[api/onboard] Saved to DB:", created);
-      } else {
-        console.warn("[api/onboard] Prisma model `Onboard` not found. Skipping DB save.");
-      }
-    } catch (dbErr) {
-      // DB-level error (connection/permission/schema)
-      console.error("[api/onboard] DB error when creating Onboard:", dbErr);
-      // Không expose quá nhiều thông tin production; nhưng cho debug nội bộ thì trả detail
-      return json(
-        {
-          ok: false,
-          error: "DB_ERROR",
-          detail: dbErr?.message || String(dbErr),
-        },
-        { status: 500 }
-      );
-    }
-
-    return json({
-      ok: true,
-      received: body,
-      db: created || null,
-    });
-  } catch (err) {
-    // Distinguish JSON parse error
-    if (err.message === "INVALID_JSON") {
-      console.warn("[api/onboard] Invalid JSON body");
-      return json({ ok: false, error: "INVALID_JSON" }, { status: 400 });
-    }
-
-    console.error("[api/onboard] Unexpected error:", err);
-    return json({ ok: false, error: err?.message || "Unknown error" }, { status: 500 });
-  }
-};
-
-// GET để test nhanh
-export const loader = async () => {
-  console.log("[api/onboard] loader ping");
-  return json({ ok: true, msg: "API /api/onboard is alive" });
-};
