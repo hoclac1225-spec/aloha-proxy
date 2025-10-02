@@ -69,8 +69,6 @@ export default ({ mode }) => {
     resolve: {
       alias: [
         { find: "~", replacement: path.resolve(__dirname, "app") },
-        { find: "~/lib", replacement: path.resolve(__dirname, "app/lib") },
-        { find: "@shopify/polaris/locales/en.json", replacement: path.resolve(__dirname, "app/locales/en.json") },
       ],
     },
     server: {
@@ -101,7 +99,7 @@ export default ({ mode }) => {
         },
       }),
       tsconfigPaths(),
-      json({ namedExports: false, esModule: true }),
+      json({ namedExports: false, esModule: false }), // JSON thuần, tránh export lỗi
       {
         name: "strip-bom",
         transform(code, id) {
@@ -112,7 +110,7 @@ export default ({ mode }) => {
     build: { assetsInlineLimit: 0 },
     optimizeDeps: {
       include: ["@shopify/app-bridge-react", "@shopify/polaris"],
-      exclude: ["@shopify/polaris/locales/en.json"],
+      exclude: ["@shopify/polaris/locales/en.json"], // tránh nhầm JSON trong node_modules
     },
   });
 };
