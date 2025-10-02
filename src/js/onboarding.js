@@ -1,43 +1,40 @@
 // src/js/onboarding.js
-import { postJson } from "./api";
+import { fetchJson } from "./api.js";
 
-async function submitOnboard(payload) {
-  try {
-    const body = {
-      // luôn gửi payload bên trong key "payload" để tương thích DB
-      payload,
-      meta: { source: "frontend", ts: new Date().toISOString() },
+/**
+ * startOnboarding(data)
+ * data: { name, email, phone, payload } where payload is an object
+ *
+ * Returns a promise that resolves to {ok, status, data, error}
+ */
+export async function startOnboarding(data = {}) {
+  // minimal validation
+  if (!data || typeof data !== "object") {
+    return { ok: false, error: "Invalid data" };
+  }
+
+  // ensure payload exists as an object (server expects `payload` present)
+  if (data.payload == null) {
+    data.payload = {};
+  }
+
+  // POST JSON to server endpoint
+  const result = await fetchJson("/api/onboard", {
+    method: "POST",
+    body: data,
+    headers: { Accept: "application/json" },
+  });
+
+  if (!result.ok) {
+    // throw or return an informative error
+    // keep consistent: return object, do not throw to avoid uncaught in promise in UI unless desired
+    return {
+      ok: false,
+      status: result.status,
+      error: result.error || "Onboarding failed",
+      data: result.data,
     };
-
-    const resp = await postJson("/api/onboard", body);
-    console.log("Onboard success:", resp);
-    return resp;
-  } catch (err) {
-    console.error("onboarding failed:", err);
-    // show friendly error in UI if you have one
-    // (err.response may contain prisma/server error)
-    throw err;
   }
+
+  return { ok: true, status: result.status, data: result.data };
 }
-
-// If you have a form with id "onboard-form" wired in your page:
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.querySelector("#onboard-form");
-  if (form) {
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const fd = new FormData(form);
-      const payload = Object.fromEntries(fd.entries());
-      // if features is sent as repeated inputs, convert accordingly
-      try {
-        await submitOnboard(payload);
-        alert("Sent onboard request");
-      } catch (err) {
-        alert("Onboard failed. Check console/logs.");
-      }
-    });
-  }
-});
-
-// For manual test from browser console:
-window.__onboardSubmit = submitOnboard;
