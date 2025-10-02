@@ -1,109 +1,65 @@
 // src/js/onboarding.js
-// Client-side onboarding helper. Always normalizes errors/returns.
+// Defensive client onboarding logic.
+// All errors are caught/logged; ensures payload exists.
 
 import { callAPI } from "./api.js";
 
-/* Validate minimal user fields */
-function validateUser(user) {
-  if (!user || typeof user !== "object") return "Invalid user data";
-  if (!user.name || String(user.name).trim().length < 2) return "Name is required";
-  if (!user.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) return "Valid email is required";
-  return null;
+function isEmail(s) {
+  return typeof s === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 }
 
-/* Minimal notification helpers */
-function showNotification(message, type = "info") {
+function notify(msg, type = "info") {
+  // simple non-fatal notifier
   try {
-    const el = document.createElement("div");
-    el.textContent = message;
-    el.style = "position:fixed;right:16px;top:16px;padding:8px 12px;border-radius:8px;z-index:99999;background:#111;color:#fff;font-size:13px;";
-    if (type === "error") el.style.background = "#b91c1c";
-    if (type === "success") el.style.background = "#059669";
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 3500);
+    console[type === "error" ? "error" : "log"]("[onboarding] " + msg);
+    if (typeof document !== "undefined") {
+      const el = document.createElement("div");
+      el.textContent = msg;
+      el.style = "position:fixed;right:12px;top:12px;padding:6px 10px;border-radius:6px;background:#111;color:#fff;z-index:99999;font-size:12px";
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
   } catch (e) {}
 }
 
-function showLoading(show = true) {
+export async function startOnboarding(user = {}, endpoint = "/api/onboard") {
+  // defend: ensure object
   try {
-    let overlay = document.getElementById("onboarding-loading-overlay");
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.id = "onboarding-loading-overlay";
-      Object.assign(overlay.style, {
-        position: "fixed",
-        inset: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.25)",
-        zIndex: 99998,
-      });
-      const spinner = document.createElement("div");
-      spinner.textContent = "Loading...";
-      Object.assign(spinner.style, { background: "#fff", padding: "12px 18px", borderRadius: "8px" });
-      overlay.appendChild(spinner);
-      document.body.appendChild(overlay);
-    }
-    overlay.style.display = show ? "flex" : "none";
-  } catch (e) {}
-}
+    if (!user || typeof user !== "object") throw new Error("Invalid user input");
+    if (!user.name || String(user.name).trim().length < 2) throw new Error("Name required");
+    if (!isEmail(user.email)) throw new Error("Valid email required");
 
-/* Make sure unhandled rejections are logged as Error */
-if (typeof window !== "undefined") {
-  window.addEventListener("unhandledrejection", (ev) => {
-    try {
-      console.error("Unhandled promise rejection (onboarding):", ev.reason);
-    } catch (e) {}
-  });
-}
+    // Ensure payload exists (Prisma expects payload property)
+    if (user.payload == null) user.payload = {};
 
-/**
- * startOnboarding
- * @param {Object} userData - { name, email, phone?, payload? }
- * @param {string} endpoint - default "/api/onboard" or full url
- * @returns {Promise<Object>} normalized response object
- */
-export async function startOnboarding(userData, endpoint = "/api/onboard") {
-  // normalize userData
-  const user = userData && typeof userData === "object" ? { ...userData } : {};
-  const v = validateUser(user);
-  if (v) {
-    showNotification(v, "error");
-    return { ok: false, error: v };
-  }
-
-  // ensure payload exists (Prisma requires payload non-nullable in your schema)
-  if (user.payload == null) user.payload = {};
-
-  // resolve endpoint: use window.SHOPIFY_APP_URL if present to build absolute path
-  let resolved = endpoint;
-  if (typeof window !== "undefined" && window.SHOPIFY_APP_URL && !/^https?:\/\//i.test(endpoint)) {
-    resolved = window.SHOPIFY_APP_URL.replace(/\/$/, "") + endpoint;
-  }
-
-  showLoading(true);
-  try {
-    const res = await callAPI(resolved, "POST", user, { timeoutMs: 20000 });
-    showLoading(false);
-
-    if (!res || typeof res !== "object") {
-      const msg = "Invalid response from server";
-      showNotification(msg, "error");
-      return { ok: false, error: msg, raw: res };
+    // Build absolute URL when window.SHOPIFY_APP_URL is present
+    if (typeof window !== "undefined" && window.SHOPIFY_APP_URL && !/^https?:\/\//i.test(endpoint)) {
+      endpoint = window.SHOPIFY_APP_URL.replace(/\/$/, "") + endpoint;
     }
 
-    if (res.ok === true || res.ok === undefined && res.status === 200) {
-      showNotification("Onboarding succeeded", "success");
-    } else {
-      const errMsg = res.error || res.message || `HTTP ${res.status || "?"}`;
-      showNotification(errMsg, "error");
+    const result = await callAPI(endpoint, "POST", user, { timeoutMs: 20000 });
+
+    // result should be an object; always safe-check
+    if (!result || typeof result !== "object") {
+      const msg = "Invalid server response";
+      notify(msg, "error");
+      return { ok: false, error: msg, raw: result };
     }
-    return res;
+
+    if (!result.ok) {
+      const em = result.error || result.message || `HTTP ${result.status || "?"}`;
+      notify("Onboard failed: " + em, "error");
+      return { ok: false, error: em, raw: result };
+    }
+
+    notify("Onboard success", "success");
+    return { ok: true, data: result.data ?? result };
   } catch (err) {
-    showLoading(false);
-    const message = err instanceof Error ? err.message : String(err || "Unknown error");
-    showNotification(message, "error");
-    return { ok: false, error: message };
+    // ALWAYS log full Error with stack to console
+    const message = err instanceof Error ? (err.message || String(err)) : String(err);
+    console.error("startOnboarding caught:", err && err.stack ? err.stack : err);
+    notify("Error: " + message, "error");
+    // rethrow so calling code can handle, but preserve Error object
+    throw err instanceof Error ? err : new Error(message);
   }
 }
