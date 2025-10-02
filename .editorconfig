@@ -8,8 +8,20 @@ indent_style = space
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-# Markdown syntax specifies that trailing whitespaces can be meaningful,
-# so let’s not trim those. e.g. 2 trailing spaces = linebreak (<br />)
-# See https://daringfireball.net/projects/markdown/syntax#p
+# Markdown: giữ khoảng trắng cuối dòng
 [*.md]
+trim_trailing_whitespace = false
+
+# JSON, YAML, Dockerfile, TOML: chuẩn hóa
+[*.{json,yml,yaml,toml,dockerfile}]
+indent_size = 2
+indent_style = space
+
+# JavaScript / JSX / TypeScript / TSX / CSS / SCSS
+[*.{js,jsx,ts,tsx,css,scss}]
+indent_size = 2
+indent_style = space
+
+# Markdown / TXT / MDX: giữ khoảng trắng quan trọng
+[*.{md,txt,mdx}]
 trim_trailing_whitespace = false
