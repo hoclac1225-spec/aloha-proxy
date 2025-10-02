@@ -1,3 +1,37 @@
-.cache
-build
+# Node modules (cài trong container)
 node_modules
+npm-debug.log
+yarn-error.log
+
+# Build output
+build
+
+# Cache & temp
+.cache
+dist
+.DS_Store
+
+# Logs
+*.log
+
+# VSCode
+.vscode/
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# Docker
+.dockerignore
+Dockerfile
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Misc
+*.bak
+*.tmp
+*.swp
