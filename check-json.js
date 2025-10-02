@@ -23,4 +23,8 @@ function walk(dir) {
   }
 }
 
+<<<<<<< HEAD
 walk('./app'); // đổi ./app thành thư mục repo
+=======
+walk('./app'); // đổi ./app thành thư mục repo
+>>>>>>> 05f94a6 (Commit all local changes)

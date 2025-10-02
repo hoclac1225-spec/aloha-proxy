@@ -1,4 +1,8 @@
+<<<<<<< HEAD:app/routes/en.json
 {
+=======
+﻿{
+>>>>>>> 80476a0 (Commit all local changes):app/locales/en.json
   "Polaris": {
     "Common": {
       "pagination": { "next": "Next", "previous": "Previous" },
@@ -27,4 +31,10 @@
       "phone": "Phone"
     }
   }
+<<<<<<< HEAD:app/routes/en.json
 }
+=======
+}
+
+
+>>>>>>> 80476a0 (Commit all local changes):app/locales/en.json
