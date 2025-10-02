@@ -1,27 +1,30 @@
-node_modules
+# Node modules
+node_modules/
+
+# MacOS
 .DS_Store
 
-/.cache
-/build
-/app/build
-/public/build/
-/public/_dev
-/app/public/build
-/prisma/dev.sqlite
-/prisma/dev.sqlite-journal
+# Cache / build outputs
+.cache/
+build/
+app/build/
+public/build/
+public/_dev/
+app/public/build/
+
+# Database / Prisma
+prisma/dev.sqlite
+prisma/dev.sqlite-journal
+prisma/dev.db
 database.sqlite
 
+# Environment variables
 .env
 .env.*
 
+# Extensions build outputs
+extensions/*/dist/
 
-
-
-
-/extensions/*/dist
-
-# Ignore shopify files created during app dev
+# Shopify dev files
 .shopify/*
-.shopify.lockdev.db 
-prisma/dev.db 
-.env 
+.shopify.lockdev.db
