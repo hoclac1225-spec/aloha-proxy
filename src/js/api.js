@@ -1,5 +1,5 @@
 // src/js/api.js
-// Robust fetch wrapper that normalizes responses and errors.
+// Robust fetch wrapper: always throws Error objects, normalizes responses.
 
 export async function callAPI(url, method = "GET", body = null, opts = {}) {
   const controller = new AbortController();
@@ -25,6 +25,7 @@ export async function callAPI(url, method = "GET", body = null, opts = {}) {
 
     const ct = (res.headers.get("content-type") || "").toLowerCase();
 
+    // Prefer JSON responses
     if (ct.includes("application/json") || ct.includes("application/hal+json")) {
       let parsed;
       try {
@@ -33,11 +34,13 @@ export async function callAPI(url, method = "GET", body = null, opts = {}) {
         const txt = await res.text().catch(() => "");
         throw new Error(`Failed to parse JSON response: ${String(e)}. Raw: ${txt}`);
       }
+      // Ensure we always return an object with ok/status
       return { ok: res.ok, status: res.status, ...parsed };
-    } else {
-      const text = await res.text().catch(() => "");
-      return { ok: res.ok, status: res.status, error: `Unexpected content-type: ${ct || "none"}`, rawText: text };
     }
+
+    // Fallback to text
+    const text = await res.text().catch(() => "");
+    return { ok: res.ok, status: res.status, error: `Unexpected content-type: ${ct || "none"}`, rawText: text };
   } catch (err) {
     clearTimeout(timeout);
     if (err && err.name === "AbortError") throw new Error("Request timed out");
