@@ -7,13 +7,24 @@
       "empty": "No data available"
     },
     "Errors": {
-      "network": "A network error has occurred"
+      "network": "A network error has occurred",
+      "notFound": "Resource not found",
+      "unauthorized": "Unauthorized access"
     },
-    "Components": {
-      "AppProvider": {
-        "skipToContent": "Skip to content"
-      }
+    "Forms": {
+      "required": "This field is required",
+      "invalidEmail": "Please enter a valid email address",
+      "invalidPhone": "Please enter a valid phone number"
+    },
+    "Notifications": {
+      "success": "Operation completed successfully",
+      "failure": "Operation failed, please try again"
+    },
+    "Labels": {
+      "username": "Username",
+      "password": "Password",
+      "email": "Email",
+      "phone": "Phone"
     }
-    // ... bạn có thể thêm các key khác tương tự trong en.js
   }
 }
