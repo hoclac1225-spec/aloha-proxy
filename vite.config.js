@@ -10,12 +10,12 @@ import stripBom from "strip-bom";
 
 installGlobals({ nativeFetch: true });
 
+// Debug plugin JSON
 function debugJsonLoadPlugin() {
   return {
     name: "debug-json-load",
     enforce: "pre",
     load(id) {
-      // id thường là đường dẫn tuyệt đối - log khi gặp locales/*.json
       if (id.includes(`${path.sep}locales${path.sep}`) && id.endsWith(".json")) {
         console.log("🔍 [DEBUG-load] id =", id);
       }
@@ -26,7 +26,6 @@ function debugJsonLoadPlugin() {
         console.log("🔍 [DEBUG-transform] id =", id);
         console.log("🔍 [DEBUG-code-preview] first 200 chars:\n", code.slice(0, 200));
         try {
-          // attempt parse to show parse error early in build logs
           JSON.parse(code);
           console.log("🔍 [DEBUG-transform] JSON.parse OK for", id);
         } catch (e) {
@@ -69,11 +68,9 @@ export default ({ mode }) => {
   return defineConfig({
     resolve: {
       alias: [
-        {
-          // nếu bạn giữ alias này, kiểm tra file thay thế tồn tại (app/locales/en.js)
-          find: "@shopify/polaris/locales/en.json",
-          replacement: path.resolve(__dirname, "app/locales/en.js"),
-        },
+        { find: "~", replacement: path.resolve(__dirname, "app") },
+        { find: "~/lib", replacement: path.resolve(__dirname, "app/lib") },
+        { find: "@shopify/polaris/locales/en.json", replacement: path.resolve(__dirname, "app/locales/en.json") },
       ],
     },
     server: {
@@ -91,9 +88,7 @@ export default ({ mode }) => {
       fs: { allow: ["app", "node_modules"] },
     },
     plugins: [
-      // our debug plugin runs first (enforce: "pre")
       debugJsonLoadPlugin(),
-
       remix({
         ignoredRouteFiles: ["**/.*"],
         future: {
@@ -105,12 +100,8 @@ export default ({ mode }) => {
           v3_routeConfig: true,
         },
       }),
-
       tsconfigPaths(),
-      // rollup json plugin - keep namedExports false to avoid named export parsing
       json({ namedExports: false, esModule: true }),
-
-      // strip BOM plugin
       {
         name: "strip-bom",
         transform(code, id) {
