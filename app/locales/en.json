@@ -1,1 +1,30 @@
-{}
+{
+  "Polaris": {
+    "Common": {
+      "pagination": { "next": "Next", "previous": "Previous" },
+      "button": { "save": "Save", "cancel": "Cancel", "delete": "Delete" },
+      "loading": "Loading...",
+      "empty": "No data available"
+    },
+    "Errors": {
+      "network": "A network error has occurred",
+      "notFound": "Resource not found",
+      "unauthorized": "Unauthorized access"
+    },
+    "Forms": {
+      "required": "This field is required",
+      "invalidEmail": "Please enter a valid email address",
+      "invalidPhone": "Please enter a valid phone number"
+    },
+    "Notifications": {
+      "success": "Operation completed successfully",
+      "failure": "Operation failed, please try again"
+    },
+    "Labels": {
+      "username": "Username",
+      "password": "Password",
+      "email": "Email",
+      "phone": "Phone"
+    }
+  }
+}
