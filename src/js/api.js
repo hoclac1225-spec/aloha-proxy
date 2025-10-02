@@ -1,49 +1,39 @@
 // src/js/api.js
-// Robust fetch wrapper - always throws Error with message on failure,
-// always returns object on success.
+export async function postJson(url, body, opts = {}) {
+  const headers = Object.assign(
+    { "Content-Type": "application/json", Accept: "application/json" },
+    opts.headers || {}
+  );
 
-export async function callAPI(url, method = "GET", body = null, opts = {}) {
-  const controller = new AbortController();
-  const timeoutMs = typeof opts.timeoutMs === "number" ? opts.timeoutMs : 15000;
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+    ...opts,
+  });
 
-  try {
-    const headers = { Accept: "application/json" };
-    const isForm = typeof FormData !== "undefined" && body instanceof FormData;
-
-    if (body && !isForm) headers["Content-Type"] = "application/json";
-
-    const res = await fetch(url, {
-      method,
-      headers,
-      body: body && !isForm ? JSON.stringify(body) : body,
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    const ct = (res.headers.get("content-type") || "").toLowerCase();
-    if (ct.includes("application/json") || ct.includes("application/hal+json")) {
-      try {
-        const json = await res.json();
-        // normalize: always object with ok/status
-        return Object.assign({ ok: res.ok, status: res.status }, json);
-      } catch (e) {
-        const raw = await res.text().catch(() => "");
-        throw new Error(`Failed to parse JSON response: ${String(e)}. Raw: ${raw}`);
-      }
+  const text = await res.text();
+  let data;
+  let parseError = null;
+  const trimmed = (text || "").trim();
+  if (!trimmed) {
+    data = null;
+  } else {
+    try {
+      data = JSON.parse(trimmed);
+    } catch (e) {
+      parseError = `Failed to parse JSON from text response: ${String(e)}`;
+      data = trimmed;
     }
-
-    // fallback to text
-    const text = await res.text().catch(() => "");
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status} - ${text || "no body"}`);
-    }
-    return { ok: true, status: res.status, rawText: text };
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (err && err.name === "AbortError") throw new Error("Request timed out");
-    if (err instanceof Error) throw err;
-    throw new Error(String(err || "Unknown network error"));
   }
+
+  if (!res.ok) {
+    const err = new Error(`HTTP ${res.status} ${res.statusText}`);
+    err.status = res.status;
+    err.response = data;
+    err.parseError = parseError;
+    throw err;
+  }
+
+  return data;
 }
