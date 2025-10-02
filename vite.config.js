@@ -23,10 +23,11 @@ function debugJsonLoadPlugin() {
     },
     transform(code, id) {
       if (id.includes(`${path.sep}locales${path.sep}`) && id.endsWith(".json")) {
+        const cleaned = stripBom(code);
         console.log("🔍 [DEBUG-transform] id =", id);
-        console.log("🔍 [DEBUG-code-preview] first 200 chars:\n", code.slice(0, 200));
+        console.log("🔍 [DEBUG-code-preview] first 200 chars:\n", cleaned.slice(0, 200));
         try {
-          JSON.parse(code);
+          JSON.parse(cleaned);
           console.log("🔍 [DEBUG-transform] JSON.parse OK for", id);
         } catch (e) {
           console.error("❌ [DEBUG-transform] JSON.parse ERROR for", id, ":", e.message);
@@ -35,7 +36,7 @@ function debugJsonLoadPlugin() {
         try {
           fs.appendFileSync(
             out,
-            `\n[${new Date().toISOString()}] ${id}\n${code.slice(0, 1000)}\n---\n`
+            `\n[${new Date().toISOString()}] ${id}\n${cleaned.slice(0, 1000)}\n---\n`
           );
         } catch (e) {
           console.error("Could not write debug-json-transform.log:", e.message);
@@ -89,6 +90,15 @@ export default ({ mode }) => {
     },
     plugins: [
       debugJsonLoadPlugin(),
+      {
+        name: "strip-bom-first",
+        enforce: "pre",
+        transform(code, id) {
+          if (id.endsWith(".json")) return stripBom(code);
+          return null;
+        },
+      },
+      json({ namedExports: false, esModule: false }), // parse JSON thuần
       remix({
         ignoredRouteFiles: ["**/.*"],
         future: {
@@ -101,13 +111,6 @@ export default ({ mode }) => {
         },
       }),
       tsconfigPaths(),
-      json({ namedExports: false, esModule: true }),
-      {
-        name: "strip-bom",
-        transform(code, id) {
-          return stripBom(code);
-        },
-      },
     ],
     build: { assetsInlineLimit: 0 },
     optimizeDeps: {
