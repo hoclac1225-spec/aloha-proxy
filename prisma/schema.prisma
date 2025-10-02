@@ -1,23 +1,25 @@
 // prisma/schema.prisma
+
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["clientExtensions"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  // Adjust connection limit or other settings if desired
+  // Bạn có thể điều chỉnh connection limit nếu muốn
 }
 
 model Onboard {
   id        Int      @id @default(autoincrement())
-  email     String   @db.VarChar(255)
+  email     String   @db.VarChar(255) @unique
   phone     String?  @db.VarChar(50)
   payload   Json
   createdAt DateTime @default(now())
-  // If you want to keep name:
   name      String?  @db.VarChar(255)
 
   @@map("onboard")
+  @@index([email])
+  @@index([createdAt])
 }
