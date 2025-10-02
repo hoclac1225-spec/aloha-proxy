@@ -1,36 +1,12 @@
-<<<<<<< HEAD
-// prisma/schema.prisma
-=======
-datasource db {
+﻿datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
->>>>>>> 05f94a6 (Commit all local changes)
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["clientExtensions"]
+  provider = "prisma-client-js"
 }
 
-<<<<<<< HEAD
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  // Bạn có thể điều chỉnh connection limit nếu muốn
-}
-
-model Onboard {
-  id        Int      @id @default(autoincrement())
-  email     String   @db.VarChar(255) @unique
-  phone     String?  @db.VarChar(50)
-  payload   Json
-  createdAt DateTime @default(now())
-  name      String?  @db.VarChar(255)
-
-  @@map("onboard")
-  @@index([email])
-  @@index([createdAt])
-=======
 model User {
   id        Int       @id @default(autoincrement())
   email     String    @unique
@@ -53,5 +29,5 @@ model Session {
   user      User     @relation(fields: [userId], references: [id])
 
   @@index([expiresAt])
->>>>>>> 05f94a6 (Commit all local changes)
 }
+

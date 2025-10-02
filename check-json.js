@@ -1,4 +1,4 @@
-// check-json.js
+﻿// check-json.js
 import fs from 'fs';
 import path from 'path';
 
@@ -11,11 +11,11 @@ function walk(dir) {
     } else if (file.endsWith('.json')) {
       try {
         const content = fs.readFileSync(full, 'utf8');
-        // kiểm tra ký tự export/comment
+        // kiß╗âm tra k├╜ tß╗▒ export/comment
         if (/export|\/\/|\/\*/.test(content)) {
           console.warn('[POTENTIAL ISSUE] JS syntax in JSON:', full);
         }
-        JSON.parse(content); // kiểm tra thuần JSON
+        JSON.parse(content); // kiß╗âm tra thuß║ºn JSON
       } catch (e) {
         console.error('[INVALID JSON]', full, e.message);
       }
@@ -23,8 +23,5 @@ function walk(dir) {
   }
 }
 
-<<<<<<< HEAD
-walk('./app'); // đổi ./app thành thư mục repo
-=======
-walk('./app'); // đổi ./app thành thư mục repo
->>>>>>> 05f94a6 (Commit all local changes)
+walk('./app'); // ─æß╗òi ./app th├ánh th╞░ mß╗Ñc repo
+
