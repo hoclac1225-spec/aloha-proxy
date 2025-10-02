@@ -1,16 +1,13 @@
-// app/lib/prisma.server.js
-import { PrismaClient } from "@prisma/client";
+// lib/prisma.server.js
+import { PrismaClient } from '@prisma/client';
 
 let prisma;
 
-if (process.env.NODE_ENV === "production") {
+if (!global.prisma) {
   prisma = new PrismaClient();
+  if (process.env.NODE_ENV === 'development') global.prisma = prisma;
 } else {
-  // In dev, attach to global to avoid hot-reload multiple instances
-  if (!global.__prisma) {
-    global.__prisma = new PrismaClient();
-  }
-  prisma = global.__prisma;
+  prisma = global.prisma;
 }
 
 export { prisma };
