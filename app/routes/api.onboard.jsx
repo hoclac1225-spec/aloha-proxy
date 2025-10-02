@@ -1,97 +1,62 @@
 // app/routes/api.onboard.jsx
-// Remix action handler for POST /api/onboard
-import { PrismaClient } from "@prisma/client";
+import { json } from "@remix-run/node";
+import prisma from "~/lib/prisma.server"; // adjust path if your prisma client import differs
 
-const prisma = new PrismaClient();
-
-export async function action({ request }) {
+export const action = async ({ request }) => {
   try {
-    const contentType = request.headers.get("content-type") || "";
-    let data = {};
+    const data = await request.json().catch(() => null);
 
-    if (contentType.includes("application/json")) {
-      try {
-        data = await request.json();
-      } catch (e) {
-        return jsonResponse({ ok: false, error: "Invalid JSON payload" }, 400);
-      }
-    } else {
-      // form-data or urlencoded fallback
-      try {
-        const form = await request.formData();
-        for (const [k, v] of form.entries()) {
-          if (k === "payload") {
-            if (typeof v === "string") {
-              try {
-                data.payload = JSON.parse(v);
-              } catch (e) {
-                // keep string if parse fails
-                data.payload = v;
-              }
-            } else {
-              data.payload = v;
-            }
-          } else {
-            data[k] = v;
-          }
-        }
-      } catch (e) {
-        // unable to parse formData
-        return jsonResponse({ ok: false, error: "Unable to parse form data" }, 400);
-      }
+    if (!data) {
+      return json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
     }
 
-    // Ensure required fields present
-    if (!data.name || !data.email) {
-      return jsonResponse({ ok: false, error: "Missing required fields: name or email" }, 400);
+    // Accept either top-level payload or whole body
+    const payload = data.payload ?? data;
+
+    if (!payload || typeof payload !== "object") {
+      return json(
+        { ok: false, error: "Missing or invalid 'payload' object" },
+        { status: 400 }
+      );
     }
 
-    // Ensure payload property exists and is JSON-compatible
-    let payloadValue = data.payload;
-    if (payloadValue == null) {
-      payloadValue = {};
-    } else {
-      // if payload is a string that looks like JSON, try to parse
-      if (typeof payloadValue === "string") {
-        try {
-          payloadValue = JSON.parse(payloadValue);
-        } catch (e) {
-          // leave as string - Prisma JSON field will reject non-object if schema expects object,
-          // but we keep it to give helpful error
-        }
-      }
-    }
-
-    // Build createData explicitly so `payload` property is always present
-    const createData = {
-      name: String(data.name),
-      email: String(data.email),
-      phone: String(data.phone || ""),
-      payload: payloadValue,
-    };
-
-    // Try to create; catch known Prisma errors and return sanitized messages
-    let created;
+    // Defensive: build createData only with the fields the DB likely accepts.
+    // We'll save the whole payload into the `payload` JSON column (if it exists).
+    // Try to create minimal record keyed by payload.
     try {
-      created = await prisma.onboard.create({ data: createData });
-    } catch (dbErr) {
-      console.error("Prisma create error:", String(dbErr));
-      // If migration/schema mismatch or missing column, return helpful message
-      const msg = dbErr && dbErr.message ? dbErr.message : "Database error";
-      return jsonResponse({ ok: false, error: `DB error: ${msg}` }, 500);
+      const created = await prisma.onboard.create({
+        data: {
+          // If your model uses different column names, this will fail.
+          // We assume there is a Json column named `payload`.
+          payload,
+        },
+      });
+      return json({ ok: true, data: created }, { status: 201 });
+    } catch (prismaErr) {
+      // If prisma error complaining about unknown argument, attempt alternative:
+      const msg = String(prismaErr?.message ?? prismaErr);
+      if (msg.includes("Unknown argument")) {
+        // Fallback: try to write into a generic `data` table/column or return informative error
+        return json(
+          {
+            ok: false,
+            error:
+              "DB schema mismatch: server expected a JSON column named `payload`. " +
+              "Please check prisma/schema.prisma and available columns. Prisma error: " +
+              msg,
+          },
+          { status: 500 }
+        );
+      }
+      // default prisma error return
+      return json({ ok: false, error: "DB error: " + msg }, { status: 500 });
     }
-
-    return jsonResponse({ ok: true, data: created }, 200);
   } catch (err) {
-    console.error("api.onboard unexpected error:", err);
-    return jsonResponse({ ok: false, error: "Server error" }, 500);
+    console.error("api.onboard error:", err);
+    return json({ ok: false, error: String(err) }, { status: 500 });
   }
-}
+};
 
-/* small helper to create JSON responses without importing Remix helpers here */
-function jsonResponse(obj, status = 200) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: { "Content-Type": "application/json; charset=utf-8" },
-  });
-}
+export const loader = async () => {
+  return json({ ok: true, message: "POST to this route to onboard" });
+};
