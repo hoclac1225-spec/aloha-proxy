@@ -1,39 +1,49 @@
 // src/js/api.js
-export async function postJson(url, body, opts = {}) {
-  const headers = Object.assign(
-    { "Content-Type": "application/json", Accept: "application/json" },
-    opts.headers || {}
-  );
+// Nhỏ gọn, defensive fetch helper that expects JSON responses (or text fallback).
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-    ...opts,
-  });
+/**
+ * Safe fetch wrapper for JSON endpoints.
+ * @param {string} url
+ * @param {object} options - fetch options (method, headers, body...)
+ * @returns {Promise<{ok: boolean, status: number, data?: any, error?: string}>}
+ */
+export async function fetchJson(url, options = {}) {
+  const opts = {
+    credentials: "same-origin",
+    ...options,
+  };
 
-  const text = await res.text();
-  let data;
-  let parseError = null;
-  const trimmed = (text || "").trim();
-  if (!trimmed) {
-    data = null;
-  } else {
-    try {
-      data = JSON.parse(trimmed);
-    } catch (e) {
-      parseError = `Failed to parse JSON from text response: ${String(e)}`;
-      data = trimmed;
+  // ensure headers object
+  opts.headers = opts.headers || {};
+  if (opts.body && typeof opts.body === "object" && !(opts.body instanceof FormData)) {
+    // assume JSON body
+    opts.headers["Content-Type"] = opts.headers["Content-Type"] || "application/json";
+    opts.body = JSON.stringify(opts.body);
+  }
+
+  try {
+    const res = await fetch(url, opts);
+
+    // try parse JSON safely
+    let text = await res.text();
+    let data = null;
+    let parseError = null;
+    if (text && text.length) {
+      try {
+        data = JSON.parse(text.trim());
+      } catch (e) {
+        parseError = `Failed to parse JSON from text response: ${String(e)}`;
+      }
     }
-  }
 
-  if (!res.ok) {
-    const err = new Error(`HTTP ${res.status} ${res.statusText}`);
-    err.status = res.status;
-    err.response = data;
-    err.parseError = parseError;
-    throw err;
-  }
+    if (!res.ok) {
+      const errMsg = (data && data.error) || (data && data.message) || parseError || `HTTP ${res.status}`;
+      return { ok: false, status: res.status, error: errMsg, data };
+    }
 
-  return data;
+    // success
+    return { ok: true, status: res.status, data: data ?? text };
+  } catch (err) {
+    return { ok: false, status: 0, error: String(err) };
+  }
 }
