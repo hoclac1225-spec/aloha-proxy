@@ -1,6 +1,9 @@
+# Ignore package and config files
 package.json
 .shadowenv.d
 .vscode
+
+# Ignore dependencies and build outputs
 node_modules
 prisma
 public
