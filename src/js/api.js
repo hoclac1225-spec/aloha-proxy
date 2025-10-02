@@ -1,18 +1,17 @@
 // src/js/api.js
-// Robust fetch wrapper: always throws Error objects, normalizes responses.
+// Robust fetch wrapper - always throws Error with message on failure,
+// always returns object on success.
 
 export async function callAPI(url, method = "GET", body = null, opts = {}) {
   const controller = new AbortController();
   const timeoutMs = typeof opts.timeoutMs === "number" ? opts.timeoutMs : 15000;
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const headers = { Accept: "application/json" };
     const isForm = typeof FormData !== "undefined" && body instanceof FormData;
 
-    if (body && !isForm) {
-      headers["Content-Type"] = "application/json";
-    }
+    if (body && !isForm) headers["Content-Type"] = "application/json";
 
     const res = await fetch(url, {
       method,
@@ -21,28 +20,28 @@ export async function callAPI(url, method = "GET", body = null, opts = {}) {
       signal: controller.signal,
     });
 
-    clearTimeout(timeout);
+    clearTimeout(timeoutId);
 
     const ct = (res.headers.get("content-type") || "").toLowerCase();
-
-    // Prefer JSON responses
     if (ct.includes("application/json") || ct.includes("application/hal+json")) {
-      let parsed;
       try {
-        parsed = await res.json();
+        const json = await res.json();
+        // normalize: always object with ok/status
+        return Object.assign({ ok: res.ok, status: res.status }, json);
       } catch (e) {
-        const txt = await res.text().catch(() => "");
-        throw new Error(`Failed to parse JSON response: ${String(e)}. Raw: ${txt}`);
+        const raw = await res.text().catch(() => "");
+        throw new Error(`Failed to parse JSON response: ${String(e)}. Raw: ${raw}`);
       }
-      // Ensure we always return an object with ok/status
-      return { ok: res.ok, status: res.status, ...parsed };
     }
 
-    // Fallback to text
+    // fallback to text
     const text = await res.text().catch(() => "");
-    return { ok: res.ok, status: res.status, error: `Unexpected content-type: ${ct || "none"}`, rawText: text };
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} - ${text || "no body"}`);
+    }
+    return { ok: true, status: res.status, rawText: text };
   } catch (err) {
-    clearTimeout(timeout);
+    clearTimeout(timeoutId);
     if (err && err.name === "AbortError") throw new Error("Request timed out");
     if (err instanceof Error) throw err;
     throw new Error(String(err || "Unknown network error"));
