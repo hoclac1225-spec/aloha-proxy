@@ -1,47 +1,23 @@
 // prisma/schema.prisma
-// Prisma schema cho aloha-proxy
-// - models: User, Session, Onboard
-// - datasource lấy từ env DATABASE_URL
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["clientExtensions"]
+}
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // Adjust connection limit or other settings if desired
 }
 
-generator client {
-  provider = "prisma-client-js"
-  // Bạn có thể thêm output = "../node_modules/@prisma/client" nếu muốn chỉ định rõ
-}
-
-model User {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique
-  name      String?
-  password  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  sessions  Session[]
-}
-
-model Session {
-  id        Int      @id @default(autoincrement())
-  sessionId String   @unique
-  userId    Int
-  data      Json
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user      User     @relation(fields: [userId], references: [id])
-
-  @@index([expiresAt])
-}
-
-// --- Mới thêm để lưu onboarding ---
 model Onboard {
   id        Int      @id @default(autoincrement())
+  email     String   @db.VarChar(255)
+  phone     String?  @db.VarChar(50)
   payload   Json
   createdAt DateTime @default(now())
+  // If you want to keep name:
+  name      String?  @db.VarChar(255)
 
-  @@index([createdAt])
+  @@map("onboard")
 }
