@@ -1,6 +1,24 @@
+# Node modules
 node_modules
+
+# Build outputs
 build
 public/build
+
+# Remix/Shopify specific
 shopify-app-remix
-*/*.yml
 .shopify
+
+# YAML / config / temp
+*/*.yml
+*.yaml
+.env
+.env.local
+.env.*.local
+.DS_Store
+
+# Optional logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
