@@ -1,31 +1,37 @@
-# --- builder ---
+# --- builder stage ---
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm ci
 
+# Copy all source code
 COPY . .
+
+# Build the Remix app
 RUN npm run build
 
-# --- final/runtime ---
+# --- final/runtime stage ---
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# copy package.json then install production deps
+# Copy package files and install only production deps
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-# copy build and public from builder
+# Copy built files and public assets from builder
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/public ./public
 
-# copy prisma schema so we can run prisma generate in final image
+# Copy prisma schema & generated client
 COPY --from=builder /app/prisma ./prisma
 
-# generate prisma client if schema exists
+# Generate Prisma client if schema exists
 RUN if [ -f prisma/schema.prisma ]; then npx prisma generate; fi
 
-# port and start
+# Expose the port Remix will run on
 EXPOSE 3000
+
+# Start the app
 CMD ["npm", "run", "start"]
