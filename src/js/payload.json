@@ -1,8 +1,12 @@
 {
-  "name": "Test User",
-  "email": "test@example.com",
-  "phone": "0123456789",
+  "meta": {
+    "source": "manual-test",
+    "timestamp": "2025-10-02T00:00:00Z"
+  },
   "payload": {
+    "name": "Test User",
+    "email": "test@example.com",
+    "phone": "0123456789",
     "shop": "aloha-test.myshopify.com",
     "plan": "basic",
     "features": ["read_products", "write_products"]
