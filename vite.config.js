@@ -1,4 +1,6 @@
+// vite.config.js
 import path from "path";
+import fs from "fs";
 import { vitePlugin as remix } from "@remix-run/dev";
 import { installGlobals } from "@remix-run/node";
 import { defineConfig, loadEnv } from "vite";
@@ -6,6 +8,33 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import json from "@rollup/plugin-json";
 
 installGlobals({ nativeFetch: true });
+
+// Plugin debug JSON mạnh
+function debugJsonPlugin() {
+  return {
+    name: "debug-json",
+    enforce: "pre",
+    transform(code, id) {
+      if (id.endsWith(".json")) {
+        console.log(`\n🔍 [DEBUG] JSON file: ${id}`);
+        console.log("Preview first 200 chars:", code.slice(0, 200));
+        for (let i = 0; i < code.length; i++) {
+          const c = code[i];
+          if (c.charCodeAt(0) < 32 && c !== "\n" && c !== "\r" && c !== "\t") {
+            console.log(`⚠️  Non-printable char at pos ${i}: charCode=${c.charCodeAt(0)}`);
+          }
+        }
+        try {
+          JSON.parse(code);
+          console.log("✅ [DEBUG] JSON parse OK");
+        } catch (e) {
+          console.error("❌ [DEBUG] JSON parse ERROR:", e.message);
+        }
+      }
+      return null;
+    },
+  };
+}
 
 export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -50,6 +79,7 @@ export default ({ mode }) => {
       fs: { allow: ["app", "node_modules"] },
     },
     plugins: [
+      debugJsonPlugin(),
       json({
         compact: false,
         namedExports: false,
@@ -72,7 +102,6 @@ export default ({ mode }) => {
     build: {
       assetsInlineLimit: 0,
       rollupOptions: {
-        // loại bỏ server-only module khỏi bundle frontend
         external: ["@shopify/shopify-app-remix/server"],
       },
     },
