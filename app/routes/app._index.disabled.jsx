@@ -4,13 +4,18 @@ import { useFetcher } from "@remix-run/react";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
-// Import Polaris robustly: support both ESM named exports and CommonJS default export
+/**
+ * Import Polaris robustly:
+ * - Một số package xuất CommonJS (default), một số xuất ESM named exports.
+ * - Dùng import * as polarisPkg để luôn có namespace, rồi ưu tiên polarisPkg.default nếu tồn tại.
+ */
 import * as polarisPkg from "@shopify/polaris";
+const polaris = (polarisPkg && polarisPkg.default) ? polarisPkg.default : polarisPkg || {};
 
-// Resolve exported namespace (if polarisPkg.default exists then package used default export)
-const polaris = polarisPkg && polarisPkg.default ? polarisPkg.default : polarisPkg || {};
-
-// Try to extract the components we need; if any missing, provide a minimal fallback
+/**
+ * Lấy các component cần dùng từ Polaris (nếu có),
+ * nếu không có thì dùng fallback nhẹ để tránh crash (đặc biệt trong môi trường dev/build khác nhau).
+ */
 const {
   Page,
   Layout,
@@ -26,20 +31,19 @@ const {
   Link,
 } = polaris;
 
-// Very small dumb fallbacks (render simple HTML) for each major component if missing.
-// These keep layout/markup readable and prevent runtime crashes.
+/* --- Fallback components (rất nhỏ, chỉ để tránh crash) --- */
 const Fallback = {
   Page: ({ children }) => <div className="fallback-page">{children}</div>,
-  Layout: ({ children, variant }) => <div className={`fallback-layout ${variant || ""}`}>{children}</div>,
+  Layout: ({ children }) => <div className="fallback-layout">{children}</div>,
   Section: ({ children, variant }) => <section className={`fallback-section ${variant || ""}`}>{children}</section>,
-  Card: ({ children }) => <div className="fallback-card" style={{ border: "1px solid #ddd", padding: 12 }}>{children}</div>,
+  Card: ({ children }) => <div style={{ border: "1px solid #e1e1e1", padding: 12, borderRadius: 6 }}>{children}</div>,
   Button: ({ children, onClick, loading, url, variant, target }) => {
     if (url) return <a href={url} target={target} rel="noreferrer" className="fallback-link">{children}</a>;
     return <button disabled={!!loading} onClick={onClick} className={`fallback-button ${variant || ""}`}>{children}</button>;
   },
   Stack: ({ children }) => <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>,
-  InlineStack: ({ children }) => <div style={{ display: "flex", gap: 12, alignItems: "center" }}>{children}</div>,
-  Box: ({ children, ...rest }) => <div {...rest}>{children}</div>,
+  InlineStack: ({ children, style }) => <div style={{ display: "flex", gap: 12, alignItems: "center", ...(style || {}) }}>{children}</div>,
+  Box: ({ children, style, ...rest }) => <div style={style} {...rest}>{children}</div>,
   List: ({ children }) => <ul>{children}</ul>,
   Text: ({ children, as = "p", variant }) => {
     const Tag = as;
@@ -48,7 +52,7 @@ const Fallback = {
   Link: ({ url, children, ...props }) => <a href={url} {...props}>{children}</a>,
 };
 
-// Choose components: prefer Polaris ones, else fallback
+/* --- UI mapping: ưu tiên Polaris, fallback nếu không có --- */
 const UI = {
   Page: Page || Fallback.Page,
   Layout: Layout || Fallback.Layout,
@@ -63,20 +67,21 @@ const UI = {
   Link: Link || Fallback.Link,
 };
 
+/* ------------------- Server handlers ------------------- */
 export const loader = async ({ request }) => {
-  // Ensure admin auth (throws/redirects if not authenticated)
+  // đảm bảo admin đã authenticate (nếu không sẽ redirect/throw theo shopify.server implementation)
   await authenticate.admin(request);
   return null;
 };
 
 export const action = async ({ request }) => {
-  // This action runs server-side and uses shopify.authenticate to get an admin client
+  // Lấy admin client từ middleware authenticate
   const { admin } = await authenticate.admin(request);
 
-  // pick a random color/title for example product
+  // random title color (ví dụ demo)
   const color = ["Red", "Orange", "Yellow", "Green"][Math.floor(Math.random() * 4)];
 
-  // 1) create product
+  // 1) Tạo product (Admin GraphQL)
   const createResp = await admin.graphql(
     `#graphql
       mutation productCreate($product: ProductInput!) {
@@ -99,62 +104,47 @@ export const action = async ({ request }) => {
           }
         }
       }`,
-    {
-      variables: {
-        product: {
-          title: `${color} Snowboard`,
-        },
-      },
-    }
+    { variables: { product: { title: `${color} Snowboard` } } }
   );
 
-  // Try parse response (some admin clients return Response-like)
+  // Một số client trả về Response-like object, một số trả JSON trực tiếp.
   let createJson;
   try {
-    // if createResp.json is available (fetch Response), parse it
-    if (createResp && typeof createResp.json === "function") {
-      createJson = await createResp.json();
-    } else {
-      createJson = createResp;
-    }
+    createJson = createResp && typeof createResp.json === "function" ? await createResp.json() : createResp;
   } catch (e) {
-    // fallback: attach minimal error
     return { error: "FAILED_CREATE", detail: e?.message || String(e) };
   }
 
   const product = createJson?.data?.productCreate?.product;
-  if (!product) return { error: "NO_PRODUCT_CREATED", detail: createJson };
+  if (!product) {
+    return { error: "NO_PRODUCT_CREATED", detail: createJson || null };
+  }
 
-  // 2) update variant price (bulk update example)
-  const variantId = product.variants?.edges?.[0]?.node?.id;
+  // 2) Update variant price (ví dụ bulk update)
+  const variantId = product?.variants?.edges?.[0]?.node?.id;
   if (!variantId) {
     return { product };
   }
 
   const variantResp = await admin.graphql(
     `#graphql
-    mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantInput!]!) {
-      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-        productVariants {
-          id
-          price
-          barcode
-          createdAt
+      mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantInput!]!) {
+        productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+          productVariants {
+            id
+            price
+            barcode
+            createdAt
+          }
         }
-      }
-    }`,
-    {
-      variables: {
-        productId: product.id,
-        variants: [{ id: variantId, price: "100.00" }],
-      },
-    }
+      }`,
+    { variables: { productId: product.id, variants: [{ id: variantId, price: "100.00" }] } }
   );
 
   let variantJson;
   try {
     variantJson = variantResp && typeof variantResp.json === "function" ? await variantResp.json() : variantResp;
-  } catch (e) {
+  } catch {
     variantJson = null;
   }
 
@@ -164,31 +154,27 @@ export const action = async ({ request }) => {
   };
 };
 
+/* ------------------- Client component ------------------- */
 export default function Index() {
   const fetcher = useFetcher();
   const app = useAppBridge();
-  const isLoading = ["loading", "submitting"].includes(fetcher.state) && fetcher.formMethod === "POST";
 
-  // get product id from fetcher data (strip gid if present)
+  const isLoading = ["loading", "submitting"].includes(fetcher.state) && fetcher.formMethod === "POST";
   const productId = fetcher.data?.product?.id?.replace?.("gid://shopify/Product/", "");
 
   useEffect(() => {
     if (productId && app && app.toast && typeof app.toast.show === "function") {
-      // Some app-bridge versions might use different APIs; try-safe:
       try {
         app.toast.show({ message: "Product created" });
       } catch {
-        // ignore
+        // ignore if API shape differs
       }
     }
   }, [productId, app]);
 
-  const generateProduct = () => {
-    // submit empty form to invoke action
-    fetcher.submit({}, { method: "POST" });
-  };
+  const generateProduct = () => fetcher.submit({}, { method: "POST" });
 
-  // UI components (may be Polaris or fallback)
+  // unpack UI components (Polaris hoặc fallback)
   const {
     Page: UPage,
     Layout: ULayout,
@@ -206,7 +192,8 @@ export default function Index() {
   return (
     <UPage>
       <TitleBar title="Remix app template">
-        {/* TitleBar children in App Bridge might not accept DOM nodes; keep a fallback */}
+        {/* TitleBar children: Polaris/AppBridge có thể không chấp nhận trực tiếp DOM nodes,
+            nhưng đa số vẫn an toàn; nếu thấy bất thường, có thể bỏ phần children này. */}
         <UButton onClick={generateProduct} variant="primary">Generate a product</UButton>
       </TitleBar>
 
@@ -228,18 +215,14 @@ export default function Index() {
                     <ULink url="https://shopify.dev/docs/api/admin-graphql" target="_blank" removeUnderline>
                       Admin GraphQL
                     </ULink>{" "}
-                    mutation demo, to provide a starting point for app development.
+                    mutation demo.
                   </UText>
                 </UStack>
 
                 <UStack>
                   <UText as="h3" variant="headingMd">Get started with products</UText>
                   <UText as="p" variant="bodyMd">
-                    Generate a product with GraphQL and get the JSON output for that product. Learn more about the{" "}
-                    <ULink url="https://shopify.dev/docs/api/admin-graphql/latest/mutations/productCreate" target="_blank" removeUnderline>
-                      productCreate
-                    </ULink>{" "}
-                    mutation in our API references.
+                    Generate a product with GraphQL and get the JSON output for that product.
                   </UText>
                 </UStack>
 
