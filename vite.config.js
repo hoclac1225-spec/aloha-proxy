@@ -4,39 +4,25 @@ import { vitePlugin as remix } from "@remix-run/dev";
 import { installGlobals } from "@remix-run/node";
 import { defineConfig, loadEnv } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
-import json from "@rollup/plugin-json";
 import stripBom from "strip-bom";
 
 installGlobals({ nativeFetch: true });
 
-// Plugin nhẹ loại bỏ BOM trước khi parse JSON
-function stripBomPlugin() {
-  return {
-    name: "strip-bom-json",
-    enforce: "pre",
-    transform(code, id) {
-      if (id.endsWith(".json")) {
-        return stripBom(code);
-      }
-      return null;
-    },
-  };
-}
-
 // Plugin debug JSON
 function debugJsonPlugin() {
   return {
-    name: "debug-json-load",
+    name: "debug-json",
     enforce: "pre",
     transform(code, id) {
       if (id.endsWith(".json")) {
-        console.log("🔍 [DEBUG] JSON file:", id);
-        console.log("🔍 [DEBUG] Preview first 200 chars:\n", code.slice(0, 200));
+        const cleaned = stripBom(code);
+        console.log(`🔍 [DEBUG] JSON file: ${id}`);
+        console.log("🔍 [DEBUG] Preview first 200 chars:\n", cleaned.slice(0, 200));
         try {
-          JSON.parse(code);
-          console.log("✅ [DEBUG] JSON parse OK:", id);
+          JSON.parse(cleaned);
+          console.log(`✅ [DEBUG] JSON parse OK: ${id}`);
         } catch (e) {
-          console.error("❌ [DEBUG] JSON parse ERROR:", e.message, "in", id);
+          console.error(`❌ [DEBUG] JSON parse ERROR: ${id} :`, e.message);
         }
       }
       return null;
@@ -69,7 +55,11 @@ export default ({ mode }) => {
       alias: [
         { find: "~", replacement: path.resolve(process.cwd(), "app") },
         { find: "~/lib", replacement: path.resolve(process.cwd(), "app/lib") },
-        { find: "@shopify/polaris/locales/en.json", replacement: path.resolve(process.cwd(), "app/locales/en.json") },
+        // Bypass Rollup parse lỗi JSON
+        {
+          find: "@shopify/polaris/locales/en.json",
+          replacement: path.resolve(process.cwd(), "app/locales/en.json") + "?raw",
+        },
       ],
     },
     server: {
@@ -87,14 +77,7 @@ export default ({ mode }) => {
       fs: { allow: ["app", "node_modules"] },
     },
     plugins: [
-      stripBomPlugin(),
-      debugJsonPlugin(), // <-- plugin debug JSON
-      json({
-        compact: false,
-        namedExports: false,
-        preferConst: true,
-        esModule: false,
-      }),
+      debugJsonPlugin(),
       remix({
         ignoredRouteFiles: ["**/.*"],
         future: {
