@@ -23,6 +23,27 @@ function stripBomPlugin() {
   };
 }
 
+// Plugin debug JSON
+function debugJsonPlugin() {
+  return {
+    name: "debug-json-load",
+    enforce: "pre",
+    transform(code, id) {
+      if (id.endsWith(".json")) {
+        console.log("🔍 [DEBUG] JSON file:", id);
+        console.log("🔍 [DEBUG] Preview first 200 chars:\n", code.slice(0, 200));
+        try {
+          JSON.parse(code);
+          console.log("✅ [DEBUG] JSON parse OK:", id);
+        } catch (e) {
+          console.error("❌ [DEBUG] JSON parse ERROR:", e.message, "in", id);
+        }
+      }
+      return null;
+    },
+  };
+}
+
 export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
@@ -67,6 +88,7 @@ export default ({ mode }) => {
     },
     plugins: [
       stripBomPlugin(),
+      debugJsonPlugin(), // <-- plugin debug JSON
       json({
         compact: false,
         namedExports: false,
