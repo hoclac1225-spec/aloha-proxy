@@ -1,4 +1,3 @@
-// vite.config.js
 import path from "path";
 import fs from "fs";
 import { vitePlugin as remix } from "@remix-run/dev";
@@ -69,9 +68,9 @@ export default ({ mode }) => {
   return defineConfig({
     resolve: {
       alias: [
-        { find: "~", replacement: path.resolve(__dirname, "app") },
-        { find: "~/lib", replacement: path.resolve(__dirname, "app/lib") },
-        { find: "@shopify/polaris/locales/en.json", replacement: path.resolve(__dirname, "app/locales/en.json") },
+        { find: "~", replacement: path.resolve(process.cwd(), "app") },
+        { find: "~/lib", replacement: path.resolve(process.cwd(), "app/lib") },
+        { find: "@shopify/polaris/locales/en.json", replacement: path.resolve(process.cwd(), "app/locales/en.json") },
       ],
     },
     server: {
