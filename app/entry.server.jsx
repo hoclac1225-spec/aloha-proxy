@@ -1,4 +1,4 @@
-﻿import { PassThrough } from "stream";
+import { PassThrough } from "stream";
 import { renderToPipeableStream } from "react-dom/server";
 import { RemixServer } from "@remix-run/react";
 import { createReadableStreamFromReadable } from "@remix-run/node";

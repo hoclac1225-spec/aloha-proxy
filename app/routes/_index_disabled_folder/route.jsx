@@ -3,25 +3,25 @@ import { json, redirect } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
 
 /**
- * Thử require ../shopify.server nếu có, nếu không thì dùng stub để dev không crash.
- * Nếu file shopify.server của bạn nằm ở chỗ khác, sửa đường dẫn require tương ứng.
+ * ThÃ¡Â»Â­ require ../shopify.server nÃ¡ÂºÂ¿u cÃƒÂ³, nÃ¡ÂºÂ¿u khÃƒÂ´ng thÃƒÂ¬ dÃƒÂ¹ng stub Ã„â€˜Ã¡Â»Æ’ dev khÃƒÂ´ng crash.
+ * NÃ¡ÂºÂ¿u file shopify.server cÃ¡Â»Â§a bÃ¡ÂºÂ¡n nÃ¡ÂºÂ±m Ã¡Â»Å¸ chÃ¡Â»â€” khÃƒÂ¡c, sÃ¡Â»Â­a Ã„â€˜Ã†Â°Ã¡Â»Âng dÃ¡ÂºÂ«n require tÃ†Â°Ã†Â¡ng Ã¡Â»Â©ng.
  */
 let authenticate, login;
 try {
   ({ authenticate, login } = require("../shopify.server"));
 } catch (e) {
   authenticate = {
-    // admin(request) phải trả { isAuthenticated: boolean } nếu có
+    // admin(request) phÃ¡ÂºÂ£i trÃ¡ÂºÂ£ { isAuthenticated: boolean } nÃ¡ÂºÂ¿u cÃƒÂ³
     admin: async () => ({ isAuthenticated: false }),
   };
   login = null;
 }
 
 /**
- * Chỉ 1 loader duy nhất ở đây:
- * - Nếu có ?shop=... -> redirect sang /auth?shop=... (bắt đầu OAuth/install flow)
- * - Nếu đã authenticated -> trả thông tin installed
- * - Nếu không -> trả showForm để hiển thị form nhập shop
+ * ChÃ¡Â»â€° 1 loader duy nhÃ¡ÂºÂ¥t Ã¡Â»Å¸ Ã„â€˜ÃƒÂ¢y:
+ * - NÃ¡ÂºÂ¿u cÃƒÂ³ ?shop=... -> redirect sang /auth?shop=... (bÃ¡ÂºÂ¯t Ã„â€˜Ã¡ÂºÂ§u OAuth/install flow)
+ * - NÃ¡ÂºÂ¿u Ã„â€˜ÃƒÂ£ authenticated -> trÃ¡ÂºÂ£ thÃƒÂ´ng tin installed
+ * - NÃ¡ÂºÂ¿u khÃƒÂ´ng -> trÃ¡ÂºÂ£ showForm Ã„â€˜Ã¡Â»Æ’ hiÃ¡Â»Æ’n thÃ¡Â»â€¹ form nhÃ¡ÂºÂ­p shop
  */
 export const loader = async ({ request }) => {
   try {
@@ -34,7 +34,7 @@ export const loader = async ({ request }) => {
     }
     return json({ ok: true, installed: true, showForm: false });
   } catch (err) {
-    // fallback an toàn: nếu có ?shop redirect để bắt OAuth, nếu không thì hiện form
+    // fallback an toÃƒÂ n: nÃ¡ÂºÂ¿u cÃƒÂ³ ?shop redirect Ã„â€˜Ã¡Â»Æ’ bÃ¡ÂºÂ¯t OAuth, nÃ¡ÂºÂ¿u khÃƒÂ´ng thÃƒÂ¬ hiÃ¡Â»â€¡n form
     const url = new URL(request.url);
     const shop = url.searchParams.get("shop");
     if (shop) return redirect(`/auth?shop=${shop}`);
@@ -48,9 +48,9 @@ export default function Index() {
   return (
     <div style={{ padding: 24 }}>
       <div>
-        <h1 style={{ fontSize: 24, marginBottom: 8 }}>Aloha — Welcome</h1>
+        <h1 style={{ fontSize: 24, marginBottom: 8 }}>Aloha Ã¢â‚¬â€ Welcome</h1>
         <p style={{ marginBottom: 16 }}>
-          Đây là trang index tạm cho app. Dùng form dưới để bắt đầu flow cài app (OAuth).
+          Ã„ÂÃƒÂ¢y lÃƒÂ  trang index tÃ¡ÂºÂ¡m cho app. DÃƒÂ¹ng form dÃ†Â°Ã¡Â»â€ºi Ã„â€˜Ã¡Â»Æ’ bÃ¡ÂºÂ¯t Ã„â€˜Ã¡ÂºÂ§u flow cÃƒÂ i app (OAuth).
         </p>
 
         {showForm && (
@@ -64,7 +64,7 @@ export default function Index() {
                 style={{ padding: 8, width: 360, marginTop: 6 }}
               />
               <div style={{ fontSize: 12, color: "#666" }}>
-                Nhập domain dạng <code>your-shop.myshopify.com</code>
+                NhÃ¡ÂºÂ­p domain dÃ¡ÂºÂ¡ng <code>your-shop.myshopify.com</code>
               </div>
             </label>
             <button type="submit" style={{ padding: "8px 12px" }}>
@@ -75,8 +75,8 @@ export default function Index() {
 
         <ul>
           <li><strong>Feature:</strong> Quick install flow & app proxy testing.</li>
-          <li><strong>Note:</strong> Nếu bạn có shopify.server, loader sẽ dùng authenticate.admin(request).</li>
-          <li><strong>Dev tip:</strong> Nếu gặp lỗi route duplicate, chỉ giữ một file `_index`.</li>
+          <li><strong>Note:</strong> NÃ¡ÂºÂ¿u bÃ¡ÂºÂ¡n cÃƒÂ³ shopify.server, loader sÃ¡ÂºÂ½ dÃƒÂ¹ng authenticate.admin(request).</li>
+          <li><strong>Dev tip:</strong> NÃ¡ÂºÂ¿u gÃ¡ÂºÂ·p lÃ¡Â»â€”i route duplicate, chÃ¡Â»â€° giÃ¡Â»Â¯ mÃ¡Â»â„¢t file `_index`.</li>
         </ul>
       </div>
     </div>

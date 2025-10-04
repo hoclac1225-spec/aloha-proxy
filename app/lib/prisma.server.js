@@ -1,4 +1,4 @@
-﻿// lib/prisma.server.js
+// lib/prisma.server.js
 import { PrismaClient } from '@prisma/client';
 
 let prisma;

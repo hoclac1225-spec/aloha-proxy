@@ -1,4 +1,4 @@
-﻿// app/root.jsx
+// app/root.jsx
 import React from "react";
 import {
   Links,
@@ -10,7 +10,7 @@ import {
 } from "@remix-run/react";
 import { json } from "@remix-run/node";
 import { AppProvider } from "@shopify/polaris";
-import en from "./locales/en"; // <<-- default import tá»« en.js
+import en from "./locales/en"; // <<-- default import tÃƒÂ¡Ã‚Â»Ã‚Â« en.json
 
 export const loader = async () => {
   const SHOPIFY_APP_URL =
