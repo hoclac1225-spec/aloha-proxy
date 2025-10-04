@@ -9,8 +9,7 @@ import json from "@rollup/plugin-json";
 installGlobals({ nativeFetch: true });
 
 /**
- * Plugin debug: log preview file JSON khi vite/rollup request file locales/en.json
- * (chỉ log, KHÔNG thay đổi nội dung) — giúp thấy nội dung trước khi plugin json parse.
+ * Debug plugin: log preview when vite requests app/locales/en.json (or node_modules copy)
  */
 function debugLocalesPlugin() {
   return {
@@ -18,15 +17,14 @@ function debugLocalesPlugin() {
     enforce: "pre",
     transform(code, id) {
       if (!id) return null;
-      const posixTarget = path.posix.join("app", "locales", "en.json");
-      const winTarget = path.join(process.cwd(), "app", "locales", "en.json");
-      if (id.endsWith(posixTarget) || id.endsWith(winTarget) || id.includes(`${path.sep}app${path.sep}locales${path.sep}en.json`)) {
+      const normalized = id.split(path.sep).join(path.posix.sep);
+      if (normalized.endsWith("/app/locales/en.json") || normalized.endsWith("/node_modules/@shopify/polaris/locales/en.json")) {
         try {
-          const preview = (typeof code === "string" ? code : String(code)).slice(0, 400);
+          const preview = String(code).slice(0, 400).replace(/\n/g, "\\n");
           console.log("🔍 [locales-debug] file:", id);
-          console.log("🔍 [locales-debug] preview:", preview.replace(/\n/g, "\\n"));
-          // thử parse để kiểm tra (không throw lên)
-          JSON.parse(code);
+          console.log("🔍 [locales-debug] preview:", preview);
+          // attempt parse (don't throw)
+          JSON.parse(String(code));
           console.log("✅ [locales-debug] JSON.parse OK");
         } catch (e) {
           console.warn("⚠️ [locales-debug] JSON.parse FAILED:", e && e.message);
@@ -38,15 +36,51 @@ function debugLocalesPlugin() {
 }
 
 /**
- * Plugin strip BOM: xóa BOM nếu có trước khi Rollup/json plugin xử lý
+ * Strip BOM from any .json content seen by Vite (pre)
  */
 function stripBomJsonPlugin() {
   return {
     name: "strip-bom-json",
     enforce: "pre",
     transform(code, id) {
-      if (id && id.endsWith(".json") && code && code.charCodeAt && code.charCodeAt(0) === 0xfeff) {
+      if (id && id.endsWith(".json") && code && code.charCodeAt(0) === 0xfeff) {
+        // remove BOM
         return code.slice(1);
+      }
+      return null;
+    },
+  };
+}
+
+/**
+ * Resolve plugin specifically redirecting en.json imports to our en.mjs file.
+ * This ensures import attributes or json plugin inconsistency won't cause double-parsing.
+ */
+function resolveEnJsonToMjsPlugin(enMjsPath) {
+  return {
+    name: "resolve-en-json-to-mjs",
+    enforce: "pre",
+    resolveId(source, importer) {
+      if (!source) return null;
+      // handle package import and direct paths
+      if (source === "@shopify/polaris/locales/en.json") {
+        return enMjsPath;
+      }
+      // also catch absolute node_modules path imports
+      if (source.endsWith(path.posix.join("@shopify", "polaris", "locales", "en.json"))
+          || source.endsWith(path.join("@shopify", "polaris", "locales", "en.json"))) {
+        return enMjsPath;
+      }
+      // if importer asked for './app/locales/en.json' etc, normalize and redirect
+      if (source.endsWith("app/locales/en.json") || source.endsWith("app\\locales\\en.json")) {
+        return enMjsPath;
+      }
+      return null;
+    },
+    load(id) {
+      // if Vite asks to load our enMjsPath, return the file contents (so it's treated as ESM)
+      if (id === enMjsPath) {
+        return fs.readFileSync(enMjsPath, "utf8");
       }
       return null;
     },
@@ -56,11 +90,11 @@ function stripBomJsonPlugin() {
 export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
-  const APP_URL = env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL || "http://localhost:60600";
-  const PORT = Number(env.PORT || process.env.PORT || 60600);
+  const APP_URL =
+    env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL || "https://aloha-proxy.onrender.com";
+  const PORT = Number(env.PORT || process.env.PORT || 10000);
 
-  // host để HMR / allowedHosts
-  const hostFromUrl = (() => {
+  const host = (() => {
     try {
       return new URL(APP_URL).hostname;
     } catch {
@@ -69,60 +103,56 @@ export default ({ mode }) => {
   })();
 
   const hmrConfig =
-    hostFromUrl === "127.0.0.1" || hostFromUrl === "localhost"
+    host === "127.0.0.1" || host === "localhost"
       ? { protocol: "ws", host: "127.0.0.1", port: PORT + 1, clientPort: PORT + 1 }
-      : { protocol: "wss", host: hostFromUrl, clientPort: 443 };
+      : { protocol: "wss", host, clientPort: 443 };
 
-  // đường tới file locales trong project (đảm bảo dùng 1 file duy nhất)
-  const appLocalesJson = path.resolve(process.cwd(), "app", "locales", "en.json");
+  // prefer an explicit en.mjs in app/locales
+  const enMjsPath = path.resolve(process.cwd(), "app/locales/en.mjs");
 
   return defineConfig({
     resolve: {
       alias: [
-        // alias dự án
+        // project aliases
         { find: "~", replacement: path.resolve(process.cwd(), "app") },
         { find: "~/lib", replacement: path.resolve(process.cwd(), "app/lib") },
 
-        // IMPORTANT: map mọi dạng import của Polaris locale sang một file duy nhất
-        { find: "@shopify/polaris/locales/en.json", replacement: appLocalesJson },
-        { find: "@shopify/polaris/locales/en.mjs", replacement: appLocalesJson },
-        { find: "@shopify/polaris/locales/en.js", replacement: appLocalesJson },
-        // map đường dẫn tuyệt đối node_modules -> app/locales/en.json (phòng trường hợp module import bằng đường tuyệt đối)
-        {
-          find: path.resolve(process.cwd(), "node_modules", "@shopify", "polaris", "locales", "en.json"),
-          replacement: appLocalesJson,
-        },
-        {
-          find: path.resolve(process.cwd(), "node_modules", "@shopify", "polaris", "locales", "en.mjs"),
-          replacement: appLocalesJson,
-        },
-        {
-          find: path.resolve(process.cwd(), "node_modules", "@shopify", "polaris", "locales", "en.js"),
-          replacement: appLocalesJson,
-        },
+        // redirect polaris JSON import to our ESM module (en.mjs)
+        { find: "@shopify/polaris/locales/en.json", replacement: enMjsPath },
+        // also handle node_modules absolute form just in case
+        { find: path.resolve(process.cwd(), "node_modules", "@shopify", "polaris", "locales", "en.json"), replacement: enMjsPath },
+        // if some code imports app/locales/en.json directly
+        { find: path.resolve(process.cwd(), "app/locales/en.json"), replacement: enMjsPath },
       ],
     },
 
     server: {
       host: true,
       port: PORT,
-      strictPort: false,
+      strictPort: true,
+      allowedHosts: [
+        host,
+        ".trycloudflare.com",
+        (hostname) => hostname.endsWith(".ngrok-free.app"),
+        (hostname) => hostname.endsWith(".ngrok.io"),
+      ],
       origin: APP_URL,
       hmr: hmrConfig,
-      // cho phép vite đọc app và node_modules
       fs: { allow: ["app", "node_modules"] },
-      // optional: whitelist host nếu cần
-      allowedHosts: [hostFromUrl, ".trycloudflare.com"],
     },
 
-    // cấu hình json & plugin debug/strip-bom
     plugins: [
+      // debug + BOM strip plugins first
       debugLocalesPlugin(),
       stripBomJsonPlugin(),
-      // rollup json plugin (xử lý import JSON đồng nhất)
+
+      // plugin to resolve en.json -> en.mjs before rollup json plugin gets involved
+      resolveEnJsonToMjsPlugin(enMjsPath),
+
+      // keep rollup json plugin for general JSON handling (we've redirected problematic import)
       json({ namedExports: false, preferConst: true, compact: false, esModule: false }),
 
-      // remix + path mapping
+      // remix + ts paths
       remix({
         ignoredRouteFiles: ["**/.*"],
         future: {
@@ -145,21 +175,9 @@ export default ({ mode }) => {
     },
 
     optimizeDeps: {
-      // include các lib cần optimize
       include: ["@shopify/app-bridge-react", "@shopify/polaris"],
-      // exclude chính xác các đường dẫn locale để vite không auto-include nhiều phiên bản
-      exclude: [
-        "@shopify/polaris/locales/en.json",
-        "@shopify/polaris/locales/en.mjs",
-        "@shopify/polaris/locales/en.js",
-      ],
+      // exclude polaris json so pre-bundling doesn't try to read original json
+      exclude: ["@shopify/polaris/locales/en.json"],
     },
-
-    define: {
-      "process.env": {},
-    },
-
-    // small perf tweak: cho phép fs đọc chỉ app và node_modules
-    // (đã set phía trên trong server.fs)
   });
 };
