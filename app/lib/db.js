@@ -1,4 +1,4 @@
-// lib/db.js
+﻿// lib/db.js
 import prisma from "./prisma.js";
 
 export async function saveOnboardingData(data) {

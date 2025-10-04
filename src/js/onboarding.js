@@ -1,4 +1,4 @@
-export async function startOnboarding(userData = {}) {
+﻿export async function startOnboarding(userData = {}) {
   try {
     await new Promise((res) => setTimeout(res, 100));
     return { ok: true, message: "Onboarding started", user: userData };
