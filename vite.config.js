@@ -1,3 +1,4 @@
+// vite.config.js
 import path from "path";
 import fs from "fs";
 import { vitePlugin as remix } from "@remix-run/dev";
@@ -8,22 +9,19 @@ import json from "@rollup/plugin-json";
 
 installGlobals({ nativeFetch: true });
 
-/**
- * Debug plugin: log preview when vite requests app/locales/en.json (or node_modules copy)
- */
 function debugLocalesPlugin() {
   return {
     name: "debug-locales",
     enforce: "pre",
     transform(code, id) {
+      // debug only when vite tries to load our en.json
       if (!id) return null;
-      const normalized = id.split(path.sep).join(path.posix.sep);
-      if (normalized.endsWith("/app/locales/en.json") || normalized.endsWith("/node_modules/@shopify/polaris/locales/en.json")) {
+      const p = id.replace(/\\/g, "/");
+      if (p.endsWith("/app/locales/en.json")) {
         try {
           const preview = String(code).slice(0, 400).replace(/\n/g, "\\n");
           console.log("🔍 [locales-debug] file:", id);
           console.log("🔍 [locales-debug] preview:", preview);
-          // attempt parse (don't throw)
           JSON.parse(String(code));
           console.log("✅ [locales-debug] JSON.parse OK");
         } catch (e) {
@@ -35,9 +33,6 @@ function debugLocalesPlugin() {
   };
 }
 
-/**
- * Strip BOM from any .json content seen by Vite (pre)
- */
 function stripBomJsonPlugin() {
   return {
     name: "strip-bom-json",
@@ -52,63 +47,13 @@ function stripBomJsonPlugin() {
   };
 }
 
-/**
- * Resolve plugin specifically redirecting en.json imports to our en.mjs file.
- * This ensures import attributes or json plugin inconsistency won't cause double-parsing.
- */
-function resolveEnJsonToMjsPlugin(enMjsPath) {
-  return {
-    name: "resolve-en-json-to-mjs",
-    enforce: "pre",
-    resolveId(source, importer) {
-      if (!source) return null;
-      // handle package import and direct paths
-      if (source === "@shopify/polaris/locales/en.json") {
-        return enMjsPath;
-      }
-      // also catch absolute node_modules path imports
-      if (source.endsWith(path.posix.join("@shopify", "polaris", "locales", "en.json"))
-          || source.endsWith(path.join("@shopify", "polaris", "locales", "en.json"))) {
-        return enMjsPath;
-      }
-      // if importer asked for './app/locales/en.json' etc, normalize and redirect
-      if (source.endsWith("app/locales/en.json") || source.endsWith("app\\locales\\en.json")) {
-        return enMjsPath;
-      }
-      return null;
-    },
-    load(id) {
-      // if Vite asks to load our enMjsPath, return the file contents (so it's treated as ESM)
-      if (id === enMjsPath) {
-        return fs.readFileSync(enMjsPath, "utf8");
-      }
-      return null;
-    },
-  };
-}
-
 export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  const APP_URL = env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL || "http://localhost:60600";
+  const PORT = Number(env.PORT || process.env.PORT || 60600);
 
-  const APP_URL =
-    env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL || "https://aloha-proxy.onrender.com";
-  const PORT = Number(env.PORT || process.env.PORT || 10000);
-
-  const host = (() => {
-    try {
-      return new URL(APP_URL).hostname;
-    } catch {
-      return "127.0.0.1";
-    }
-  })();
-
-  const hmrConfig =
-    host === "127.0.0.1" || host === "localhost"
-      ? { protocol: "ws", host: "127.0.0.1", port: PORT + 1, clientPort: PORT + 1 }
-      : { protocol: "wss", host, clientPort: 443 };
-
-  // prefer an explicit en.mjs in app/locales
-  const enMjsPath = path.resolve(process.cwd(), "app/locales/en.mjs");
+  // ensure we consistently redirect any import of polaris locales to our single file
+  const appLocalesJson = path.resolve(process.cwd(), "app/locales/en.json");
 
   return defineConfig({
     resolve: {
@@ -117,53 +62,32 @@ export default ({ mode }) => {
         { find: "~", replacement: path.resolve(process.cwd(), "app") },
         { find: "~/lib", replacement: path.resolve(process.cwd(), "app/lib") },
 
-        // redirect polaris JSON import to our ESM module (en.mjs)
-        { find: "@shopify/polaris/locales/en.json", replacement: enMjsPath },
-        // also handle node_modules absolute form just in case
-        { find: path.resolve(process.cwd(), "node_modules", "@shopify", "polaris", "locales", "en.json"), replacement: enMjsPath },
-        // if some code imports app/locales/en.json directly
-        { find: path.resolve(process.cwd(), "app/locales/en.json"), replacement: enMjsPath },
+        // Force any import that requests polaris en.json (or an absolute path) to use app/locales/en.json
+        { find: "@shopify/polaris/locales/en.json", replacement: appLocalesJson },
+        {
+          find: path.resolve(process.cwd(), "node_modules", "@shopify", "polaris", "locales", "en.json"),
+          replacement: appLocalesJson,
+        },
+
+        // also map any en.mjs (if something imports en.mjs) -> use en.json (keeps single source)
+        { find: "@shopify/polaris/locales/en.mjs", replacement: appLocalesJson },
       ],
     },
 
     server: {
       host: true,
       port: PORT,
-      strictPort: true,
-      allowedHosts: [
-        host,
-        ".trycloudflare.com",
-        (hostname) => hostname.endsWith(".ngrok-free.app"),
-        (hostname) => hostname.endsWith(".ngrok.io"),
-      ],
+      strictPort: false,
       origin: APP_URL,
-      hmr: hmrConfig,
+      hmr: true,
       fs: { allow: ["app", "node_modules"] },
     },
 
     plugins: [
-      // debug + BOM strip plugins first
       debugLocalesPlugin(),
       stripBomJsonPlugin(),
-
-      // plugin to resolve en.json -> en.mjs before rollup json plugin gets involved
-      resolveEnJsonToMjsPlugin(enMjsPath),
-
-      // keep rollup json plugin for general JSON handling (we've redirected problematic import)
-      json({ namedExports: false, preferConst: true, compact: false, esModule: false }),
-
-      // remix + ts paths
-      remix({
-        ignoredRouteFiles: ["**/.*"],
-        future: {
-          v3_fetcherPersist: true,
-          v3_relativeSplatPath: true,
-          v3_throwAbortReason: true,
-          v3_lazyRouteDiscovery: true,
-          v3_singleFetch: false,
-          v3_routeConfig: true,
-        },
-      }),
+      json({ namedExports: false, preferConst: true, compact: false, esModule: true }),
+      remix({ ignoredRouteFiles: ["**/.*"] }),
       tsconfigPaths(),
     ],
 
@@ -176,8 +100,8 @@ export default ({ mode }) => {
 
     optimizeDeps: {
       include: ["@shopify/app-bridge-react", "@shopify/polaris"],
-      // exclude polaris json so pre-bundling doesn't try to read original json
-      exclude: ["@shopify/polaris/locales/en.json"],
+      // exclude the polaris locale JSON so alias above is used consistently
+      exclude: ["@shopify/polaris/locales/en.json", "@shopify/polaris/locales/en.mjs"],
     },
   });
 };
