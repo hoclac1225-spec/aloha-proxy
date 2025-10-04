@@ -1,7 +1,7 @@
-import fs from "fs";
+﻿import fs from "fs";
 import stripBom from "strip-bom";
 
-const filePath = "./app/locales/en.json";
+const filePath = "./app/locales/en.js";
 const content = fs.readFileSync(filePath, "utf8");
 const cleaned = stripBom(content);
 

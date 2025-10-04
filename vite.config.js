@@ -1,4 +1,3 @@
-// vite.config.js
 import path from "path";
 import fs from "fs";
 import { vitePlugin as remix } from "@remix-run/dev";
@@ -6,25 +5,29 @@ import { installGlobals } from "@remix-run/node";
 import { defineConfig, loadEnv } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import json from "@rollup/plugin-json";
-import stripBom from "strip-bom";
 
 installGlobals({ nativeFetch: true });
 
-// Debug plugin JSON
-function debugJsonLoadPlugin() {
+/**
+ * Debug plugin: log preview when vite requests app/locales/en.json (or node_modules copy)
+ */
+function debugLocalesPlugin() {
   return {
-    name: "debug-json-load",
+    name: "debug-locales",
     enforce: "pre",
     transform(code, id) {
-      if (id.endsWith("/app/locales/en.json") || id.endsWith("\\app\\locales\\en.json")) {
+      if (!id) return null;
+      const normalized = id.split(path.sep).join(path.posix.sep);
+      if (normalized.endsWith("/app/locales/en.json") || normalized.endsWith("/node_modules/@shopify/polaris/locales/en.json")) {
         try {
-          const preview = (typeof code === "string" ? code : String(code)).slice(0, 400);
-          console.log("🔍 [DEBUG] JSON file:", id);
-          console.log("Preview first 200 chars:", preview.slice(0, 200).replace(/\n/g, "\\n"));
-          JSON.parse(code);
-          console.log("✅ [DEBUG] JSON parse OK");
+          const preview = String(code).slice(0, 400).replace(/\n/g, "\\n");
+          console.log("🔍 [locales-debug] file:", id);
+          console.log("🔍 [locales-debug] preview:", preview);
+          // attempt parse (don't throw)
+          JSON.parse(String(code));
+          console.log("✅ [locales-debug] JSON.parse OK");
         } catch (e) {
-          console.warn("⚠️ [DEBUG] JSON parse failed:", e && e.message);
+          console.warn("⚠️ [locales-debug] JSON.parse FAILED:", e && e.message);
         }
       }
       return null;
@@ -32,8 +35,58 @@ function debugJsonLoadPlugin() {
   };
 }
 
-// Nếu có module yêu cầu JSON từ node_modules, chúng ta redirect sang file JS của bạn
-// để tránh Vite/rollup phải parse JSON mà gây lỗi.
+/**
+ * Strip BOM from any .json content seen by Vite (pre)
+ */
+function stripBomJsonPlugin() {
+  return {
+    name: "strip-bom-json",
+    enforce: "pre",
+    transform(code, id) {
+      if (id && id.endsWith(".json") && code && code.charCodeAt(0) === 0xfeff) {
+        // remove BOM
+        return code.slice(1);
+      }
+      return null;
+    },
+  };
+}
+
+/**
+ * Resolve plugin specifically redirecting en.json imports to our en.mjs file.
+ * This ensures import attributes or json plugin inconsistency won't cause double-parsing.
+ */
+function resolveEnJsonToMjsPlugin(enMjsPath) {
+  return {
+    name: "resolve-en-json-to-mjs",
+    enforce: "pre",
+    resolveId(source, importer) {
+      if (!source) return null;
+      // handle package import and direct paths
+      if (source === "@shopify/polaris/locales/en.json") {
+        return enMjsPath;
+      }
+      // also catch absolute node_modules path imports
+      if (source.endsWith(path.posix.join("@shopify", "polaris", "locales", "en.json"))
+          || source.endsWith(path.join("@shopify", "polaris", "locales", "en.json"))) {
+        return enMjsPath;
+      }
+      // if importer asked for './app/locales/en.json' etc, normalize and redirect
+      if (source.endsWith("app/locales/en.json") || source.endsWith("app\\locales\\en.json")) {
+        return enMjsPath;
+      }
+      return null;
+    },
+    load(id) {
+      // if Vite asks to load our enMjsPath, return the file contents (so it's treated as ESM)
+      if (id === enMjsPath) {
+        return fs.readFileSync(enMjsPath, "utf8");
+      }
+      return null;
+    },
+  };
+}
+
 export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
@@ -54,15 +107,22 @@ export default ({ mode }) => {
       ? { protocol: "ws", host: "127.0.0.1", port: PORT + 1, clientPort: PORT + 1 }
       : { protocol: "wss", host, clientPort: 443 };
 
+  // prefer an explicit en.mjs in app/locales
+  const enMjsPath = path.resolve(process.cwd(), "app/locales/en.mjs");
+
   return defineConfig({
     resolve: {
       alias: [
+        // project aliases
         { find: "~", replacement: path.resolve(process.cwd(), "app") },
         { find: "~/lib", replacement: path.resolve(process.cwd(), "app/lib") },
-        // map bất kỳ import tới en.json sang en.js do bạn đã tạo
-        { find: "@shopify/polaris/locales/en.json", replacement: path.resolve(process.cwd(), "app/locales/en.js") },
-        // nếu có import bằng đường dẫn trực tiếp trong module (hiếm), bạn có thể thêm:
-        { find: path.resolve(process.cwd(), "app/locales/en.json"), replacement: path.resolve(process.cwd(), "app/locales/en.js") },
+
+        // redirect polaris JSON import to our ESM module (en.mjs)
+        { find: "@shopify/polaris/locales/en.json", replacement: enMjsPath },
+        // also handle node_modules absolute form just in case
+        { find: path.resolve(process.cwd(), "node_modules", "@shopify", "polaris", "locales", "en.json"), replacement: enMjsPath },
+        // if some code imports app/locales/en.json directly
+        { find: path.resolve(process.cwd(), "app/locales/en.json"), replacement: enMjsPath },
       ],
     },
 
@@ -81,16 +141,18 @@ export default ({ mode }) => {
       fs: { allow: ["app", "node_modules"] },
     },
 
-    // cấu hình json và plugin debug
-    json: {
-      namedExports: false,
-      stringify: false,
-    },
-
     plugins: [
-      debugJsonLoadPlugin(),
-      // plugin json rollup (vẫn giữ, nhưng alias sẽ chuyển import sang JS)
-      json({ namedExports: false, compact: false, preferConst: true, esModule: false }),
+      // debug + BOM strip plugins first
+      debugLocalesPlugin(),
+      stripBomJsonPlugin(),
+
+      // plugin to resolve en.json -> en.mjs before rollup json plugin gets involved
+      resolveEnJsonToMjsPlugin(enMjsPath),
+
+      // keep rollup json plugin for general JSON handling (we've redirected problematic import)
+      json({ namedExports: false, preferConst: true, compact: false, esModule: false }),
+
+      // remix + ts paths
       remix({
         ignoredRouteFiles: ["**/.*"],
         future: {
@@ -108,15 +170,14 @@ export default ({ mode }) => {
     build: {
       assetsInlineLimit: 0,
       rollupOptions: {
-        // nếu có module server-only bạn muốn externalize, thêm ở đây
         external: [],
       },
     },
 
     optimizeDeps: {
       include: ["@shopify/app-bridge-react", "@shopify/polaris"],
+      // exclude polaris json so pre-bundling doesn't try to read original json
       exclude: ["@shopify/polaris/locales/en.json"],
     },
   });
 };
-

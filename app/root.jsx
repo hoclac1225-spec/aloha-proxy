@@ -10,7 +10,7 @@ import {
 } from "@remix-run/react";
 import { json } from "@remix-run/node";
 import { AppProvider } from "@shopify/polaris";
-import en from "./locales/en"; // <<-- default import từ en.js
+import en from "./locales/en"; // <<-- default import tá»« en.js
 
 export const loader = async () => {
   const SHOPIFY_APP_URL =

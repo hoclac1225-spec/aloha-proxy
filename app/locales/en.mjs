@@ -1,3 +1,4 @@
+// app/locales/en.mjs
 export default {
   "Polaris": {
     "Common": {
@@ -34,4 +35,4 @@ export default {
       "phone": "Phone"
     }
   }
-}
+};

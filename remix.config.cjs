@@ -1,5 +1,4 @@
-// remix.config.cjs
-// Nếu HOST được set và SHOPIFY_APP_URL chưa set hoặc trùng với HOST, dùng HOST làm URL
+﻿/* remix.config.cjs */
 if (
   process.env.HOST &&
   (!process.env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL === process.env.HOST)
