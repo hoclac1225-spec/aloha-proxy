@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "start": "node server.js"
-  },
+  "dev": "vite",
+  "build": "cross-env NODE_ENV=production vite build",
+  "start": "node server.js"
+},
   "dependencies": {
     "inflight": "1.0.6",
     "rimraf": "^5.0.0",
