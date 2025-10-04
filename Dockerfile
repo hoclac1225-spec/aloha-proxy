@@ -1,37 +1,39 @@
-# --- builder ---
+# --- builder stage ---
 FROM node:20-alpine AS builder
 WORKDIR /app
 
 # copy package.json và package-lock.json
 COPY package*.json ./
 
-# dùng npm install thay vì npm ci để tránh fail do lock file
-RUN npm install --omit=dev
+# cài tất cả dependencies (bao gồm devDependencies)
+RUN npm install
 
 # copy toàn bộ code và build
 COPY . .
 RUN npm run build
 
-# --- runner/runtime ---
+# --- runner/runtime stage ---
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# thiết lập biến môi trường database
+# thiết lập biến môi trường database (tuỳ dự án)
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 
 # copy package.json và package-lock.json
 COPY package*.json ./
 
-# cài production dependencies
+# cài chỉ production dependencies
 RUN npm install --omit=dev
 
-# copy build, public và prisma từ builder
+# copy build từ builder
 COPY --from=builder /app/build ./build
+
+# copy public và prisma từ builder
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
-# copy entrypoint
+# copy entrypoint và cấp quyền chạy
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
