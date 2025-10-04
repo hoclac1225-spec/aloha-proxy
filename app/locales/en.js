@@ -1,4 +1,4 @@
-﻿{
+export default {
   "Polaris": {
     "Common": {
       "pagination": {
@@ -34,4 +34,4 @@
       "phone": "Phone"
     }
   }
-}
+};

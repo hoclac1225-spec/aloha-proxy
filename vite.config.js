@@ -1,4 +1,3 @@
-// vite.config.js
 import path from "path";
 import fs from "fs";
 import { vitePlugin as remix } from "@remix-run/dev";
@@ -6,40 +5,24 @@ import { installGlobals } from "@remix-run/node";
 import { defineConfig, loadEnv } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import json from "@rollup/plugin-json";
-import stripBom from "strip-bom";
 
 installGlobals({ nativeFetch: true });
 
-// Debug plugin JSON
+// nhẹ: debug JSON load cho locales (ghi log ngắn)
 function debugJsonLoadPlugin() {
   return {
     name: "debug-json-load",
     enforce: "pre",
-    load(id) {
-      if (id.includes(`${path.sep}locales${path.sep}`) && id.endsWith(".json")) {
-        console.log("🔍 [DEBUG-load] id =", id);
-      }
-      return null;
-    },
     transform(code, id) {
-      if (id.includes(`${path.sep}locales${path.sep}`) && id.endsWith(".json")) {
-        const cleaned = stripBom(code);
-        console.log("🔍 [DEBUG-transform] id =", id);
-        console.log("🔍 [DEBUG-code-preview] first 200 chars:\n", cleaned.slice(0, 200));
+      if (id.endsWith("/app/locales/en.json") || id.endsWith("\\app\\locales\\en.json")) {
         try {
-          JSON.parse(cleaned);
-          console.log("🔍 [DEBUG-transform] JSON.parse OK for", id);
+          const preview = (typeof code === "string" ? code : String(code)).slice(0, 400);
+          console.log("🔍 [DEBUG] JSON file:", id);
+          console.log("Preview first 200 chars:", preview.slice(0, 200).replace(/\n/g, "\\n"));
+          JSON.parse(code);
+          console.log("✅ [DEBUG] JSON parse OK");
         } catch (e) {
-          console.error("❌ [DEBUG-transform] JSON.parse ERROR for", id, ":", e.message);
-        }
-        const out = path.resolve(process.cwd(), "debug-json-transform.log");
-        try {
-          fs.appendFileSync(
-            out,
-            `\n[${new Date().toISOString()}] ${id}\n${cleaned.slice(0, 1000)}\n---\n`
-          );
-        } catch (e) {
-          console.error("Could not write debug-json-transform.log:", e.message);
+          console.warn("⚠️ [DEBUG] JSON parse failed:", e && e.message);
         }
       }
       return null;
@@ -47,10 +30,13 @@ function debugJsonLoadPlugin() {
   };
 }
 
+// Nếu có module yêu cầu JSON từ node_modules, chúng ta redirect sang file JS của bạn
+// để tránh Vite/rollup phải parse JSON mà gây lỗi.
 export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
-  const APP_URL = env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL || "https://aloha-proxy.onrender.com";
+  const APP_URL =
+    env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL || "https://aloha-proxy.onrender.com";
   const PORT = Number(env.PORT || process.env.PORT || 10000);
 
   const host = (() => {
@@ -69,11 +55,15 @@ export default ({ mode }) => {
   return defineConfig({
     resolve: {
       alias: [
-        { find: "~", replacement: path.resolve(__dirname, "app") },
-        { find: "~/lib", replacement: path.resolve(__dirname, "app/lib") },
-        { find: "@shopify/polaris/locales/en.json", replacement: path.resolve(__dirname, "app/locales/en.json") },
+        { find: "~", replacement: path.resolve(process.cwd(), "app") },
+        { find: "~/lib", replacement: path.resolve(process.cwd(), "app/lib") },
+        // map bất kỳ import tới en.json sang en.js do bạn đã tạo
+        { find: "@shopify/polaris/locales/en.json", replacement: path.resolve(process.cwd(), "app/locales/en.js") },
+        // nếu có import bằng đường dẫn trực tiếp trong module (hiếm), bạn có thể thêm:
+        { find: path.resolve(process.cwd(), "app/locales/en.json"), replacement: path.resolve(process.cwd(), "app/locales/en.js") },
       ],
     },
+
     server: {
       host: true,
       port: PORT,
@@ -88,17 +78,17 @@ export default ({ mode }) => {
       hmr: hmrConfig,
       fs: { allow: ["app", "node_modules"] },
     },
+
+    // cấu hình json và plugin debug
+    json: {
+      namedExports: false,
+      stringify: false,
+    },
+
     plugins: [
       debugJsonLoadPlugin(),
-      {
-        name: "strip-bom-first",
-        enforce: "pre",
-        transform(code, id) {
-          if (id.endsWith(".json")) return stripBom(code);
-          return null;
-        },
-      },
-      json({ namedExports: false, esModule: false }), // parse JSON thuần
+      // plugin json rollup (vẫn giữ, nhưng alias sẽ chuyển import sang JS)
+      json({ namedExports: false, compact: false, preferConst: true, esModule: false }),
       remix({
         ignoredRouteFiles: ["**/.*"],
         future: {
@@ -112,7 +102,15 @@ export default ({ mode }) => {
       }),
       tsconfigPaths(),
     ],
-    build: { assetsInlineLimit: 0 },
+
+    build: {
+      assetsInlineLimit: 0,
+      rollupOptions: {
+        // nếu có module server-only bạn muốn externalize, thêm ở đây
+        external: [],
+      },
+    },
+
     optimizeDeps: {
       include: ["@shopify/app-bridge-react", "@shopify/polaris"],
       exclude: ["@shopify/polaris/locales/en.json"],
