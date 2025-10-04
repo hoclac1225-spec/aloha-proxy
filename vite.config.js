@@ -1,183 +1,331 @@
-import path from "path";
-import fs from "fs";
-import { vitePlugin as remix } from "@remix-run/dev";
-import { installGlobals } from "@remix-run/node";
-import { defineConfig, loadEnv } from "vite";
-import tsconfigPaths from "vite-tsconfig-paths";
-import json from "@rollup/plugin-json";
+// app/routes/app._index.disabled.jsx
+import React, { useEffect } from "react";
+import { useFetcher } from "@remix-run/react";
+// Import Polaris module namespace so it works whether package is CommonJS or ESM
+import * as polaris from "@shopify/polaris";
 
-installGlobals({ nativeFetch: true });
+import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
+import { authenticate } from "../shopify.server";
 
 /**
- * Debug plugin: log preview when vite requests app/locales/en.json (or node_modules copy)
+ * Safely pick components from polaris with fallbacks.
+ * Some Polaris distributions export different sets / names (VerticalStack vs LegacyStack, etc.)
  */
-function debugLocalesPlugin() {
-  return {
-    name: "debug-locales",
-    enforce: "pre",
-    transform(code, id) {
-      if (!id) return null;
-      const normalized = id.split(path.sep).join(path.posix.sep);
-      if (normalized.endsWith("/app/locales/en.json") || normalized.endsWith("/node_modules/@shopify/polaris/locales/en.json")) {
-        try {
-          const preview = String(code).slice(0, 400).replace(/\n/g, "\\n");
-          console.log("🔍 [locales-debug] file:", id);
-          console.log("🔍 [locales-debug] preview:", preview);
-          // attempt parse (don't throw)
-          JSON.parse(String(code));
-          console.log("✅ [locales-debug] JSON.parse OK");
-        } catch (e) {
-          console.warn("⚠️ [locales-debug] JSON.parse FAILED:", e && e.message);
+const {
+  Page: PolarisPage,
+  Card,
+  Button,
+  Box,
+  List,
+  Layout,
+  Text,
+  Link,
+  // possible stack/container names
+  VerticalStack,
+  LegacyStack,
+  BlockStack: PolarisBlockStack,
+  InlineStack: PolarisInlineStack,
+  Inline,
+} = polaris || {};
+
+// Provide fallbacks: prefer explicit names, else try alternatives, else no-op components
+const Page = PolarisPage || (({ children }) => <div>{children}</div>);
+const BlockStack =
+  PolarisBlockStack || VerticalStack || LegacyStack || (({ children }) => <div>{children}</div>);
+const InlineStack = PolarisInlineStack || Inline || (({ children }) => <div style={{ display: "inline-block" }}>{children}</div>);
+const LayoutComponent = Layout || (({ children }) => <div>{children}</div>);
+const CardComponent = Card || (({ children }) => <div>{children}</div>);
+const TextComponent = Text || (({ children, as: As = "div", variant }) => <As>{children}</As>);
+const LinkComponent = Link || (({ children }) => <a>{children}</a>);
+const BoxComponent = Box || (({ children, style }) => <div style={style}>{children}</div>);
+const ListComponent = List || (({ children }) => <ul>{children}</ul>);
+const ButtonComponent = Button || (({ children, ...props }) => <button {...props}>{children}</button>);
+
+export const loader = async ({ request }) => {
+  await authenticate.admin(request);
+  return null;
+};
+
+export const action = async ({ request }) => {
+  const { admin } = await authenticate.admin(request);
+  const color = ["Red", "Orange", "Yellow", "Green"][Math.floor(Math.random() * 4)];
+  const response = await admin.graphql(
+    `#graphql
+      mutation populateProduct($product: ProductCreateInput!) {
+        productCreate(product: $product) {
+          product {
+            id
+            title
+            handle
+            status
+            variants(first: 10) {
+              edges {
+                node {
+                  id
+                  price
+                  barcode
+                  createdAt
+                }
+              }
+            }
+          }
+        }
+      }`,
+    {
+      variables: {
+        product: {
+          title: `${color} Snowboard`,
+        },
+      },
+    }
+  );
+  const responseJson = await response.json();
+  const product = responseJson.data.productCreate.product;
+  const variantId = product.variants.edges[0].node.id;
+  const variantResponse = await admin.graphql(
+    `#graphql
+    mutation shopifyRemixTemplateUpdateVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+        productVariants {
+          id
+          price
+          barcode
+          createdAt
         }
       }
-      return null;
-    },
-  };
-}
-
-/**
- * Strip BOM from any .json content seen by Vite (pre)
- */
-function stripBomJsonPlugin() {
-  return {
-    name: "strip-bom-json",
-    enforce: "pre",
-    transform(code, id) {
-      if (id && id.endsWith(".json") && code && code.charCodeAt(0) === 0xfeff) {
-        // remove BOM
-        return code.slice(1);
-      }
-      return null;
-    },
-  };
-}
-
-/**
- * Resolve plugin specifically redirecting en.json imports to our en.mjs file.
- * This ensures import attributes or json plugin inconsistency won't cause double-parsing.
- */
-function resolveEnJsonToMjsPlugin(enMjsPath) {
-  return {
-    name: "resolve-en-json-to-mjs",
-    enforce: "pre",
-    resolveId(source, importer) {
-      if (!source) return null;
-      // handle package import and direct paths
-      if (source === "@shopify/polaris/locales/en.json") {
-        return enMjsPath;
-      }
-      // also catch absolute node_modules path imports
-      if (source.endsWith(path.posix.join("@shopify", "polaris", "locales", "en.json"))
-          || source.endsWith(path.join("@shopify", "polaris", "locales", "en.json"))) {
-        return enMjsPath;
-      }
-      // if importer asked for './app/locales/en.json' etc, normalize and redirect
-      if (source.endsWith("app/locales/en.json") || source.endsWith("app\\locales\\en.json")) {
-        return enMjsPath;
-      }
-      return null;
-    },
-    load(id) {
-      // if Vite asks to load our enMjsPath, return the file contents (so it's treated as ESM)
-      if (id === enMjsPath) {
-        return fs.readFileSync(enMjsPath, "utf8");
-      }
-      return null;
-    },
-  };
-}
-
-export default ({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
-
-  const APP_URL =
-    env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL || "https://aloha-proxy.onrender.com";
-  const PORT = Number(env.PORT || process.env.PORT || 10000);
-
-  const host = (() => {
-    try {
-      return new URL(APP_URL).hostname;
-    } catch {
-      return "127.0.0.1";
-    }
-  })();
-
-  const hmrConfig =
-    host === "127.0.0.1" || host === "localhost"
-      ? { protocol: "ws", host: "127.0.0.1", port: PORT + 1, clientPort: PORT + 1 }
-      : { protocol: "wss", host, clientPort: 443 };
-
-  // prefer an explicit en.mjs in app/locales
-  const enMjsPath = path.resolve(process.cwd(), "app/locales/en.mjs");
-
-  return defineConfig({
-    resolve: {
-      alias: [
-        // project aliases
-        { find: "~", replacement: path.resolve(process.cwd(), "app") },
-        { find: "~/lib", replacement: path.resolve(process.cwd(), "app/lib") },
-
-        // redirect polaris JSON import to our ESM module (en.mjs)
-        { find: "@shopify/polaris/locales/en.json", replacement: enMjsPath },
-        // also handle node_modules absolute form just in case
-        { find: path.resolve(process.cwd(), "node_modules", "@shopify", "polaris", "locales", "en.json"), replacement: enMjsPath },
-        // if some code imports app/locales/en.json directly
-        { find: path.resolve(process.cwd(), "app/locales/en.json"), replacement: enMjsPath },
-      ],
-    },
-
-    server: {
-      host: true,
-      port: PORT,
-      strictPort: true,
-      allowedHosts: [
-        host,
-        ".trycloudflare.com",
-        (hostname) => hostname.endsWith(".ngrok-free.app"),
-        (hostname) => hostname.endsWith(".ngrok.io"),
-      ],
-      origin: APP_URL,
-      hmr: hmrConfig,
-      fs: { allow: ["app", "node_modules"] },
-    },
-
-    plugins: [
-      // debug + BOM strip plugins first
-      debugLocalesPlugin(),
-      stripBomJsonPlugin(),
-
-      // plugin to resolve en.json -> en.mjs before rollup json plugin gets involved
-      resolveEnJsonToMjsPlugin(enMjsPath),
-
-      // keep rollup json plugin for general JSON handling (we've redirected problematic import)
-      json({ namedExports: false, preferConst: true, compact: false, esModule: false }),
-
-      // remix + ts paths
-      remix({
-        ignoredRouteFiles: ["**/.*"],
-        future: {
-          v3_fetcherPersist: true,
-          v3_relativeSplatPath: true,
-          v3_throwAbortReason: true,
-          v3_lazyRouteDiscovery: true,
-          v3_singleFetch: false,
-          v3_routeConfig: true,
-        },
-      }),
-      tsconfigPaths(),
-    ],
-
-    build: {
-      assetsInlineLimit: 0,
-      rollupOptions: {
-        external: [],
+    }`,
+    {
+      variables: {
+        productId: product.id,
+        variants: [{ id: variantId, price: "100.00" }],
       },
-    },
+    }
+  );
+  const variantResponseJson = await variantResponse.json();
 
-    optimizeDeps: {
-      include: ["@shopify/app-bridge-react", "@shopify/polaris"],
-      // exclude polaris json so pre-bundling doesn't try to read original json
-      exclude: ["@shopify/polaris/locales/en.json"],
-    },
-  });
+  return {
+    product: responseJson.data.productCreate.product,
+    variant: variantResponseJson.data.productVariantsBulkUpdate.productVariants,
+  };
 };
+
+export default function Index() {
+  const fetcher = useFetcher();
+  const shopify = useAppBridge();
+  const isLoading =
+    ["loading", "submitting"].includes(fetcher.state) && fetcher.formMethod === "POST";
+  const productId = fetcher.data?.product?.id?.replace?.("gid://shopify/Product/", "");
+
+  useEffect(() => {
+    if (productId && shopify?.toast?.show) {
+      shopify.toast.show("Product created");
+    }
+  }, [productId, shopify]);
+
+  const generateProduct = () => fetcher.submit({}, { method: "POST" });
+
+  return (
+    <Page>
+      <TitleBar title="Remix app template">
+        <ButtonComponent variant="primary" onClick={generateProduct}>
+          Generate a product
+        </ButtonComponent>
+      </TitleBar>
+
+      <BlockStack gap="500">
+        <LayoutComponent>
+          <LayoutComponent.Section>
+            <CardComponent>
+              <BlockStack gap="500">
+                <BlockStack gap="200">
+                  <TextComponent as="h2" variant="headingMd">
+                    Congrats on creating a new Shopify app 🎉
+                  </TextComponent>
+                  <TextComponent variant="bodyMd" as="p">
+                    This embedded app template uses{" "}
+                    <LinkComponent
+                      url="https://shopify.dev/docs/apps/tools/app-bridge"
+                      target="_blank"
+                      removeUnderline
+                    >
+                      App Bridge
+                    </LinkComponent>{" "}
+                    interface examples like an{" "}
+                    <LinkComponent url="/app/additional" removeUnderline>
+                      additional page in the app nav
+                    </LinkComponent>
+                    , as well as an{" "}
+                    <LinkComponent
+                      url="https://shopify.dev/docs/api/admin-graphql"
+                      target="_blank"
+                      removeUnderline
+                    >
+                      Admin GraphQL
+                    </LinkComponent>{" "}
+                    mutation demo, to provide a starting point for app development.
+                  </TextComponent>
+                </BlockStack>
+
+                <BlockStack gap="200">
+                  <TextComponent as="h3" variant="headingMd">
+                    Get started with products
+                  </TextComponent>
+                  <TextComponent as="p" variant="bodyMd">
+                    Generate a product with GraphQL and get the JSON output for that product.
+                  </TextComponent>
+                </BlockStack>
+
+                <InlineStack gap="300">
+                  <ButtonComponent loading={isLoading} onClick={generateProduct}>
+                    Generate a product
+                  </ButtonComponent>
+
+                  {fetcher.data?.product && (
+                    <ButtonComponent
+                      url={`shopify:admin/products/${productId}`}
+                      target="_blank"
+                      variant="plain"
+                    >
+                      View product
+                    </ButtonComponent>
+                  )}
+                </InlineStack>
+
+                {fetcher.data?.product && (
+                  <>
+                    <TextComponent as="h3" variant="headingMd">
+                      productCreate mutation
+                    </TextComponent>
+                    <BoxComponent
+                      padding="400"
+                      background="bg-surface-active"
+                      borderWidth="025"
+                      borderRadius="200"
+                      borderColor="border"
+                      overflowX="scroll"
+                    >
+                      <pre style={{ margin: 0 }}>
+                        <code>{JSON.stringify(fetcher.data.product, null, 2)}</code>
+                      </pre>
+                    </BoxComponent>
+
+                    <TextComponent as="h3" variant="headingMd">
+                      productVariantsBulkUpdate mutation
+                    </TextComponent>
+                    <BoxComponent
+                      padding="400"
+                      background="bg-surface-active"
+                      borderWidth="025"
+                      borderRadius="200"
+                      borderColor="border"
+                      overflowX="scroll"
+                    >
+                      <pre style={{ margin: 0 }}>
+                        <code>{JSON.stringify(fetcher.data.variant, null, 2)}</code>
+                      </pre>
+                    </BoxComponent>
+                  </>
+                )}
+              </BlockStack>
+            </CardComponent>
+          </LayoutComponent.Section>
+
+          <LayoutComponent.Section variant="oneThird">
+            <BlockStack gap="500">
+              <CardComponent>
+                <BlockStack gap="200">
+                  <TextComponent as="h2" variant="headingMd">
+                    App template specs
+                  </TextComponent>
+
+                  <BlockStack gap="200">
+                    <InlineStack align="space-between">
+                      <TextComponent as="span" variant="bodyMd">
+                        Framework
+                      </TextComponent>
+                      <LinkComponent url="https://remix.run" target="_blank" removeUnderline>
+                        Remix
+                      </LinkComponent>
+                    </InlineStack>
+
+                    <InlineStack align="space-between">
+                      <TextComponent as="span" variant="bodyMd">
+                        Database
+                      </TextComponent>
+                      <LinkComponent url="https://www.prisma.io/" target="_blank" removeUnderline>
+                        Prisma
+                      </LinkComponent>
+                    </InlineStack>
+
+                    <InlineStack align="space-between">
+                      <TextComponent as="span" variant="bodyMd">
+                        Interface
+                      </TextComponent>
+                      <span>
+                        <LinkComponent url="https://polaris.shopify.com" target="_blank" removeUnderline>
+                          Polaris
+                        </LinkComponent>
+                        {", "}
+                        <LinkComponent
+                          url="https://shopify.dev/docs/apps/tools/app-bridge"
+                          target="_blank"
+                          removeUnderline
+                        >
+                          App Bridge
+                        </LinkComponent>
+                      </span>
+                    </InlineStack>
+
+                    <InlineStack align="space-between">
+                      <TextComponent as="span" variant="bodyMd">
+                        API
+                      </TextComponent>
+                      <LinkComponent
+                        url="https://shopify.dev/docs/api/admin-graphql"
+                        target="_blank"
+                        removeUnderline
+                      >
+                        GraphQL API
+                      </LinkComponent>
+                    </InlineStack>
+                  </BlockStack>
+                </BlockStack>
+              </CardComponent>
+
+              <CardComponent>
+                <BlockStack gap="200">
+                  <TextComponent as="h2" variant="headingMd">
+                    Next steps
+                  </TextComponent>
+                  <ListComponent>
+                    <ListComponent.Item>
+                      Build an{" "}
+                      <LinkComponent
+                        url="https://shopify.dev/docs/apps/getting-started/build-app-example"
+                        target="_blank"
+                        removeUnderline
+                      >
+                        example app
+                      </LinkComponent>{" "}
+                      to get started
+                    </ListComponent.Item>
+                    <ListComponent.Item>
+                      Explore Shopify’s API with{" "}
+                      <LinkComponent
+                        url="https://shopify.dev/docs/apps/tools/graphiql-admin-api"
+                        target="_blank"
+                        removeUnderline
+                      >
+                        GraphiQL
+                      </LinkComponent>
+                    </ListComponent.Item>
+                  </ListComponent>
+                </BlockStack>
+              </CardComponent>
+            </BlockStack>
+          </LayoutComponent.Section>
+        </LayoutComponent>
+      </BlockStack>
+    </Page>
+  );
+}
