@@ -1,4 +1,4 @@
-import path from "path";
+﻿import path from "path";
 import fs from "fs";
 import { vitePlugin as remix } from "@remix-run/dev";
 import { installGlobals } from "@remix-run/node";
@@ -8,21 +8,21 @@ import json from "@rollup/plugin-json";
 
 installGlobals({ nativeFetch: true });
 
-// nhẹ: debug JSON load cho locales (ghi log ngắn)
+// nháº¹: debug JSON load cho locales (ghi log ngáº¯n)
 function debugJsonLoadPlugin() {
   return {
     name: "debug-json-load",
     enforce: "pre",
     transform(code, id) {
-      if (id.endsWith("/app/locales/en.json") || id.endsWith("\\app\\locales\\en.json")) {
+      if (id.endsWith("/app/locales/en.js") || id.endsWith("\\app\\locales\\en.js")) {
         try {
           const preview = (typeof code === "string" ? code : String(code)).slice(0, 400);
-          console.log("🔍 [DEBUG] JSON file:", id);
+          console.log("ðŸ” [DEBUG] JSON file:", id);
           console.log("Preview first 200 chars:", preview.slice(0, 200).replace(/\n/g, "\\n"));
           JSON.parse(code);
-          console.log("✅ [DEBUG] JSON parse OK");
+          console.log("âœ… [DEBUG] JSON parse OK");
         } catch (e) {
-          console.warn("⚠️ [DEBUG] JSON parse failed:", e && e.message);
+          console.warn("âš ï¸ [DEBUG] JSON parse failed:", e && e.message);
         }
       }
       return null;
@@ -30,8 +30,8 @@ function debugJsonLoadPlugin() {
   };
 }
 
-// Nếu có module yêu cầu JSON từ node_modules, chúng ta redirect sang file JS của bạn
-// để tránh Vite/rollup phải parse JSON mà gây lỗi.
+// Náº¿u cÃ³ module yÃªu cáº§u JSON tá»« node_modules, chÃºng ta redirect sang file JS cá»§a báº¡n
+// Ä‘á»ƒ trÃ¡nh Vite/rollup pháº£i parse JSON mÃ  gÃ¢y lá»—i.
 export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
@@ -57,10 +57,10 @@ export default ({ mode }) => {
       alias: [
         { find: "~", replacement: path.resolve(process.cwd(), "app") },
         { find: "~/lib", replacement: path.resolve(process.cwd(), "app/lib") },
-        // map bất kỳ import tới en.json sang en.js do bạn đã tạo
-        { find: "@shopify/polaris/locales/en.json", replacement: path.resolve(process.cwd(), "app/locales/en.js") },
-        // nếu có import bằng đường dẫn trực tiếp trong module (hiếm), bạn có thể thêm:
-        { find: path.resolve(process.cwd(), "app/locales/en.json"), replacement: path.resolve(process.cwd(), "app/locales/en.js") },
+        // map báº¥t ká»³ import tá»›i en.js sang en.js do báº¡n Ä‘Ã£ táº¡o
+        { find: "@shopify/polaris/locales/en.js", replacement: path.resolve(process.cwd(), "app/locales/en.js") },
+        // náº¿u cÃ³ import báº±ng Ä‘Æ°á»ng dáº«n trá»±c tiáº¿p trong module (hiáº¿m), báº¡n cÃ³ thá»ƒ thÃªm:
+        { find: path.resolve(process.cwd(), "app/locales/en.js"), replacement: path.resolve(process.cwd(), "app/locales/en.js") },
       ],
     },
 
@@ -79,7 +79,7 @@ export default ({ mode }) => {
       fs: { allow: ["app", "node_modules"] },
     },
 
-    // cấu hình json và plugin debug
+    // cáº¥u hÃ¬nh json vÃ  plugin debug
     json: {
       namedExports: false,
       stringify: false,
@@ -87,7 +87,7 @@ export default ({ mode }) => {
 
     plugins: [
       debugJsonLoadPlugin(),
-      // plugin json rollup (vẫn giữ, nhưng alias sẽ chuyển import sang JS)
+      // plugin json rollup (váº«n giá»¯, nhÆ°ng alias sáº½ chuyá»ƒn import sang JS)
       json({ namedExports: false, compact: false, preferConst: true, esModule: false }),
       remix({
         ignoredRouteFiles: ["**/.*"],
@@ -106,14 +106,14 @@ export default ({ mode }) => {
     build: {
       assetsInlineLimit: 0,
       rollupOptions: {
-        // nếu có module server-only bạn muốn externalize, thêm ở đây
+        // náº¿u cÃ³ module server-only báº¡n muá»‘n externalize, thÃªm á»Ÿ Ä‘Ã¢y
         external: [],
       },
     },
 
     optimizeDeps: {
       include: ["@shopify/app-bridge-react", "@shopify/polaris"],
-      exclude: ["@shopify/polaris/locales/en.json"],
+      exclude: ["@shopify/polaris/locales/en.js"],
     },
   });
 };

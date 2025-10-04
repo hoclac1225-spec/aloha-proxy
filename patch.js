@@ -1,5 +1,5 @@
-// patch.cjs
-// Sửa " with { type: 'json' }" => " assert { type: 'json' }"
+﻿// patch.cjs
+// Sá»­a " with { type: 'json' }" => " assert { type: 'json' }"
 const fs = require('fs');
 const path = require('path');
 

@@ -1,9 +1,9 @@
-// app/routes/api/onboard/index.test.jsx
+﻿// app/routes/api/onboard/index.test.jsx
 import { json } from "@remix-run/node";
-import { prisma } from "../../../db.server"; // từ app/routes/api/onboard -> app/db.server.js (lên 3 cấp)
+import { prisma } from "../../../db.server"; // tá»« app/routes/api/onboard -> app/db.server.js (lÃªn 3 cáº¥p)
 
 /**
- * Helper: đọc payload (JSON hoặc form-data)
+ * Helper: Ä‘á»c payload (JSON hoáº·c form-data)
  */
 async function readRequestBody(request) {
   const contentType = (request.headers.get("content-type") || "").toLowerCase();
@@ -11,13 +11,13 @@ async function readRequestBody(request) {
     try {
       return await request.json();
     } catch (e) {
-      // JSON không hợp lệ
+      // JSON khÃ´ng há»£p lá»‡
       const err = new Error("INVALID_JSON");
       err.code = "INVALID_JSON";
       throw err;
     }
   } else {
-    // form-data hoặc khác: chuyển FormData -> object
+    // form-data hoáº·c khÃ¡c: chuyá»ƒn FormData -> object
     const form = await request.formData();
     const out = {};
     for (const [k, v] of form.entries()) out[k] = v;
@@ -27,9 +27,9 @@ async function readRequestBody(request) {
 
 /**
  * POST /api/onboard
- * - nhận JSON hoặc form-data
- * - log chi tiết
- * - cố lưu vào prisma.onboard nếu tồn tại
+ * - nháº­n JSON hoáº·c form-data
+ * - log chi tiáº¿t
+ * - cá»‘ lÆ°u vÃ o prisma.onboard náº¿u tá»“n táº¡i
  */
 export const action = async ({ request }) => {
   try {
@@ -40,7 +40,7 @@ export const action = async ({ request }) => {
       contentLength: request.headers.get("content-length"),
     });
 
-    // Optional: giới hạn kích thước (header-based)
+    // Optional: giá»›i háº¡n kÃ­ch thÆ°á»›c (header-based)
     const contentLength = request.headers.get("content-length");
     if (contentLength && Number(contentLength) > 10 * 1024 * 1024) {
       console.warn("[api/onboard] payload too large:", contentLength);
@@ -53,7 +53,7 @@ export const action = async ({ request }) => {
     let created = null;
     try {
       if (prisma && prisma.onboard && typeof prisma.onboard.create === "function") {
-        // Thực hiện lưu vào DB
+        // Thá»±c hiá»‡n lÆ°u vÃ o DB
         created = await prisma.onboard.create({
           data: { payload: body },
         });
@@ -62,7 +62,7 @@ export const action = async ({ request }) => {
         console.warn("[api/onboard] prisma.onboard model not found, skipping DB write");
       }
     } catch (dbErr) {
-      // Log rõ lỗi DB để debug (kết nối, quyền, schema mismatch...)
+      // Log rÃµ lá»—i DB Ä‘á»ƒ debug (káº¿t ná»‘i, quyá»n, schema mismatch...)
       console.error("[api/onboard] DB create error:", dbErr);
       return json(
         { ok: false, error: "DB_CREATE_ERROR", detail: dbErr?.message || String(dbErr) },
@@ -72,7 +72,7 @@ export const action = async ({ request }) => {
 
     return json({ ok: true, received: body, db: created || null }, { status: 200 });
   } catch (err) {
-    // Trường hợp lỗi parse JSON
+    // TrÆ°á»ng há»£p lá»—i parse JSON
     if (err && err.code === "INVALID_JSON") {
       console.warn("[api/onboard] invalid json payload");
       return json({ ok: false, error: "INVALID_JSON" }, { status: 400 });

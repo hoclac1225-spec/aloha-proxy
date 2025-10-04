@@ -1,4 +1,4 @@
-// Nếu HOST được set và SHOPIFY_APP_URL chưa set hoặc trùng với HOST, dùng HOST làm URL
+﻿// Náº¿u HOST Ä‘Æ°á»£c set vÃ  SHOPIFY_APP_URL chÆ°a set hoáº·c trÃ¹ng vá»›i HOST, dÃ¹ng HOST lÃ m URL
 if (
     process.env.HOST &&
     (!process.env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL === process.env.HOST)
@@ -23,8 +23,8 @@ if (
   
     dev: {
       port: Number(process.env.PORT) || 60600,
-      strictPort: false, // false để tự tăng port nếu bận
-      host: '127.0.0.1', // ép IPv4
+      strictPort: false, // false Ä‘á»ƒ tá»± tÄƒng port náº¿u báº­n
+      host: '127.0.0.1', // Ã©p IPv4
       watchPaths: ["app", "remix.config.cjs"]
     }
   };

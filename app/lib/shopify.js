@@ -1,9 +1,9 @@
-// lib/shopify.js
-import fetch from "node-fetch"; // hoặc global fetch nếu Node 18+
+﻿// lib/shopify.js
+import fetch from "node-fetch"; // hoáº·c global fetch náº¿u Node 18+
 
 export async function createShopifyCustomer(data) {
   const SHOPIFY_API_TOKEN = process.env.SHOPIFY_API_TOKEN;
-  const SHOPIFY_SHOP = process.env.SHOPIFY_SHOP; // ví dụ: myshop.myshopify.com
+  const SHOPIFY_SHOP = process.env.SHOPIFY_SHOP; // vÃ­ dá»¥: myshop.myshopify.com
 
   const response = await fetch(`https://${SHOPIFY_SHOP}/admin/api/2025-07/customers.json`, {
     method: "POST",

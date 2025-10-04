@@ -1,10 +1,10 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 import { useFetcher } from "@remix-run/react";
 import {
   Card,
   Button,
   /* BlockStack, */ 
-  VerticalStack, // hoặc LegacyStack nếu VerticalStack không tồn tại
+  VerticalStack, // hoáº·c LegacyStack náº¿u VerticalStack khÃ´ng tá»“n táº¡i
   Box,
   List,
 } from '@shopify/polaris';
@@ -115,7 +115,7 @@ export default function Index() {
               <BlockStack gap="500">
                 <BlockStack gap="200">
                   <Text as="h2" variant="headingMd">
-                    Congrats on creating a new Shopify app 🎉
+                    Congrats on creating a new Shopify app ðŸŽ‰
                   </Text>
                   <Text variant="bodyMd" as="p">
                     This embedded app template uses{" "}
@@ -304,7 +304,7 @@ export default function Index() {
                       to get started
                     </List.Item>
                     <List.Item>
-                      Explore Shopify’s API with{" "}
+                      Explore Shopifyâ€™s API with{" "}
                       <Link
                         url="https://shopify.dev/docs/apps/tools/graphiql-admin-api"
                         target="_blank"

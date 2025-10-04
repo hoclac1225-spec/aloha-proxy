@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 
 const localesDir = path.join(__dirname, 'app/locales');
@@ -11,6 +11,6 @@ fs.readdirSync(localesDir).forEach(file => {
     console.log('[VALID] ', file);
   } catch (err) {
     console.error('[INVALID] ', file, err.message);
-    process.exit(1); // stop build nếu có lỗi
+    process.exit(1); // stop build náº¿u cÃ³ lá»—i
   }
 });

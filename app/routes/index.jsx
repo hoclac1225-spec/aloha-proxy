@@ -1,7 +1,7 @@
-// app/routes/index.jsx
+﻿// app/routes/index.jsx
 import { useEffect, useState } from "react";
 import { useLoaderData } from "@remix-run/react";
-import { startOnboarding } from "../../src/js/onboarding.js"; // nếu file thực sự ở src/js
+import { startOnboarding } from "../../src/js/onboarding.js"; // náº¿u file thá»±c sá»± á»Ÿ src/js
 
 export const loader = () => {
   return {
@@ -21,7 +21,7 @@ export default function Index() {
 
   const handleOnboard = async () => {
     const userData = {
-      name: "Lạc Học",
+      name: "Láº¡c Há»c",
       email: "hoclac1225@gmail.com",
       phone: "0327525280",
     };
@@ -33,15 +33,15 @@ export default function Index() {
       alert(JSON.stringify(res));
     } catch (err) {
       console.error("[index] Onboarding error:", err);
-      alert("Có lỗi xảy ra khi onboarding!");
+      alert("CÃ³ lá»—i xáº£y ra khi onboarding!");
     }
   };
 
   return (
     <div>
-      <h1>Shopify App đang chạy!</h1>
+      <h1>Shopify App Ä‘ang cháº¡y!</h1>
       <p>App URL: {shopifyUrl}</p>
-      <button onClick={handleOnboard}>Bắt đầu Onboarding</button>
+      <button onClick={handleOnboard}>Báº¯t Ä‘áº§u Onboarding</button>
     </div>
   );
 }

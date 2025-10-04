@@ -1,9 +1,9 @@
-import fs from "fs";
+﻿import fs from "fs";
 import { ApiVersion } from "@shopify/shopify-api";
 import { shopifyApiProject, ApiType } from "@shopify/api-codegen-preset";
 
 /**
- * Tạo cấu hình GraphQL Codegen cho app và các extension.
+ * Táº¡o cáº¥u hÃ¬nh GraphQL Codegen cho app vÃ  cÃ¡c extension.
  */
 function getConfig() {
   const config = {
@@ -20,12 +20,12 @@ function getConfig() {
     },
   };
 
-  // Kiểm tra các extension
+  // Kiá»ƒm tra cÃ¡c extension
   let extensions = [];
   try {
     extensions = fs.readdirSync("./extensions");
   } catch {
-    // Bỏ qua nếu thư mục extensions không tồn tại
+    // Bá» qua náº¿u thÆ° má»¥c extensions khÃ´ng tá»“n táº¡i
   }
 
   for (const entry of extensions) {
