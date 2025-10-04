@@ -1,7 +1,7 @@
-﻿// app/routes/index.jsx
+// app/routes/index.jsx
 import { useEffect, useState } from "react";
 import { useLoaderData } from "@remix-run/react";
-import { startOnboarding } from "../../src/js/onboarding.js"; // náº¿u file thá»±c sá»± á»Ÿ src/js
+import { startOnboarding } from "../../src/js/onboarding.js"; // nÃƒÂ¡Ã‚ÂºÃ‚Â¿u file thÃƒÂ¡Ã‚Â»Ã‚Â±c sÃƒÂ¡Ã‚Â»Ã‚Â± ÃƒÂ¡Ã‚Â»Ã…Â¸ src/js
 
 export const loader = () => {
   return {
@@ -21,7 +21,7 @@ export default function Index() {
 
   const handleOnboard = async () => {
     const userData = {
-      name: "Láº¡c Há»c",
+      name: "LÃƒÂ¡Ã‚ÂºÃ‚Â¡c HÃƒÂ¡Ã‚Â»Ã‚Âc",
       email: "hoclac1225@gmail.com",
       phone: "0327525280",
     };
@@ -33,15 +33,15 @@ export default function Index() {
       alert(JSON.stringify(res));
     } catch (err) {
       console.error("[index] Onboarding error:", err);
-      alert("CÃ³ lá»—i xáº£y ra khi onboarding!");
+      alert("CÃƒÆ’Ã‚Â³ lÃƒÂ¡Ã‚Â»Ã¢â‚¬â€i xÃƒÂ¡Ã‚ÂºÃ‚Â£y ra khi onboarding!");
     }
   };
 
   return (
     <div>
-      <h1>Shopify App Ä‘ang cháº¡y!</h1>
+      <h1>Shopify App Ãƒâ€žÃ¢â‚¬Ëœang chÃƒÂ¡Ã‚ÂºÃ‚Â¡y!</h1>
       <p>App URL: {shopifyUrl}</p>
-      <button onClick={handleOnboard}>Báº¯t Ä‘áº§u Onboarding</button>
+      <button onClick={handleOnboard}>BÃƒÂ¡Ã‚ÂºÃ‚Â¯t Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚ÂºÃ‚Â§u Onboarding</button>
     </div>
   );
 }

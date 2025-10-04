@@ -1,28 +1,54 @@
-﻿import { useEffect } from "react";
+// app/routes/app._index.disabled.jsx
+import React, { useEffect } from "react";
 import { useFetcher } from "@remix-run/react";
-import {
-  Card,
-  Button,
-  /* BlockStack, */ 
-  VerticalStack, // hoáº·c LegacyStack náº¿u VerticalStack khÃ´ng tá»“n táº¡i
-  Box,
-  List,
-} from '@shopify/polaris';
+// Import Polaris module namespace so it works whether package is CommonJS or ESM
+import * as polaris from "@shopify/polaris";
 
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
+/**
+ * Safely pick components from polaris with fallbacks.
+ * Some Polaris distributions export different sets / names (VerticalStack vs LegacyStack, etc.)
+ */
+const {
+  Page: PolarisPage,
+  Card,
+  Button,
+  Box,
+  List,
+  Layout,
+  Text,
+  Link,
+  // possible stack/container names
+  VerticalStack,
+  LegacyStack,
+  BlockStack: PolarisBlockStack,
+  InlineStack: PolarisInlineStack,
+  Inline,
+} = polaris || {};
+
+// Provide fallbacks: prefer explicit names, else try alternatives, else no-op components
+const Page = PolarisPage || (({ children }) => <div>{children}</div>);
+const BlockStack =
+  PolarisBlockStack || VerticalStack || LegacyStack || (({ children }) => <div>{children}</div>);
+const InlineStack = PolarisInlineStack || Inline || (({ children }) => <div style={{ display: "inline-block" }}>{children}</div>);
+const LayoutComponent = Layout || (({ children }) => <div>{children}</div>);
+const CardComponent = Card || (({ children }) => <div>{children}</div>);
+const TextComponent = Text || (({ children, as: As = "div", variant }) => <As>{children}</As>);
+const LinkComponent = Link || (({ children }) => <a>{children}</a>);
+const BoxComponent = Box || (({ children, style }) => <div style={style}>{children}</div>);
+const ListComponent = List || (({ children }) => <ul>{children}</ul>);
+const ButtonComponent = Button || (({ children, ...props }) => <button {...props}>{children}</button>);
+
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
-
   return null;
 };
 
 export const action = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
-  const color = ["Red", "Orange", "Yellow", "Green"][
-    Math.floor(Math.random() * 4)
-  ];
+  const color = ["Red", "Orange", "Yellow", "Green"][Math.floor(Math.random() * 4)];
   const response = await admin.graphql(
     `#graphql
       mutation populateProduct($product: ProductCreateInput!) {
@@ -51,7 +77,7 @@ export const action = async ({ request }) => {
           title: `${color} Snowboard`,
         },
       },
-    },
+    }
   );
   const responseJson = await response.json();
   const product = responseJson.data.productCreate.product;
@@ -73,7 +99,7 @@ export const action = async ({ request }) => {
         productId: product.id,
         variants: [{ id: variantId, price: "100.00" }],
       },
-    },
+    }
   );
   const variantResponseJson = await variantResponse.json();
 
@@ -87,99 +113,90 @@ export default function Index() {
   const fetcher = useFetcher();
   const shopify = useAppBridge();
   const isLoading =
-    ["loading", "submitting"].includes(fetcher.state) &&
-    fetcher.formMethod === "POST";
-  const productId = fetcher.data?.product?.id.replace(
-    "gid://shopify/Product/",
-    "",
-  );
+    ["loading", "submitting"].includes(fetcher.state) && fetcher.formMethod === "POST";
+  const productId = fetcher.data?.product?.id?.replace?.("gid://shopify/Product/", "");
 
   useEffect(() => {
-    if (productId) {
+    if (productId && shopify?.toast?.show) {
       shopify.toast.show("Product created");
     }
   }, [productId, shopify]);
+
   const generateProduct = () => fetcher.submit({}, { method: "POST" });
 
   return (
     <Page>
       <TitleBar title="Remix app template">
-        <button variant="primary" onClick={generateProduct}>
+        <ButtonComponent variant="primary" onClick={generateProduct}>
           Generate a product
-        </button>
+        </ButtonComponent>
       </TitleBar>
+
       <BlockStack gap="500">
-        <Layout>
-          <Layout.Section>
-            <Card>
+        <LayoutComponent>
+          <LayoutComponent.Section>
+            <CardComponent>
               <BlockStack gap="500">
                 <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
+                  <TextComponent as="h2" variant="headingMd">
                     Congrats on creating a new Shopify app ðŸŽ‰
-                  </Text>
-                  <Text variant="bodyMd" as="p">
+                  </TextComponent>
+                  <TextComponent variant="bodyMd" as="p">
                     This embedded app template uses{" "}
-                    <Link
+                    <LinkComponent
                       url="https://shopify.dev/docs/apps/tools/app-bridge"
                       target="_blank"
                       removeUnderline
                     >
                       App Bridge
-                    </Link>{" "}
+                    </LinkComponent>{" "}
                     interface examples like an{" "}
-                    <Link url="/app/additional" removeUnderline>
+                    <LinkComponent url="/app/additional" removeUnderline>
                       additional page in the app nav
-                    </Link>
+                    </LinkComponent>
                     , as well as an{" "}
-                    <Link
+                    <LinkComponent
                       url="https://shopify.dev/docs/api/admin-graphql"
                       target="_blank"
                       removeUnderline
                     >
                       Admin GraphQL
-                    </Link>{" "}
-                    mutation demo, to provide a starting point for app
-                    development.
-                  </Text>
+                    </LinkComponent>{" "}
+                    mutation demo, to provide a starting point for app development.
+                  </TextComponent>
                 </BlockStack>
+
                 <BlockStack gap="200">
-                  <Text as="h3" variant="headingMd">
+                  <TextComponent as="h3" variant="headingMd">
                     Get started with products
-                  </Text>
-                  <Text as="p" variant="bodyMd">
-                    Generate a product with GraphQL and get the JSON output for
-                    that product. Learn more about the{" "}
-                    <Link
-                      url="https://shopify.dev/docs/api/admin-graphql/latest/mutations/productCreate"
-                      target="_blank"
-                      removeUnderline
-                    >
-                      productCreate
-                    </Link>{" "}
-                    mutation in our API references.
-                  </Text>
+                  </TextComponent>
+                  <TextComponent as="p" variant="bodyMd">
+                    Generate a product with GraphQL and get the JSON output for that product.
+                  </TextComponent>
                 </BlockStack>
+
                 <InlineStack gap="300">
-                  <Button loading={isLoading} onClick={generateProduct}>
+                  <ButtonComponent loading={isLoading} onClick={generateProduct}>
                     Generate a product
-                  </Button>
+                  </ButtonComponent>
+
                   {fetcher.data?.product && (
-                    <Button
+                    <ButtonComponent
                       url={`shopify:admin/products/${productId}`}
                       target="_blank"
                       variant="plain"
                     >
                       View product
-                    </Button>
+                    </ButtonComponent>
                   )}
                 </InlineStack>
+
                 {fetcher.data?.product && (
                   <>
-                    <Text as="h3" variant="headingMd">
-                      {" "}
+                    <TextComponent as="h3" variant="headingMd">
                       productCreate mutation
-                    </Text>
-                    <Box
+                    </TextComponent>
+                    <BoxComponent
                       padding="400"
                       background="bg-surface-active"
                       borderWidth="025"
@@ -188,16 +205,14 @@ export default function Index() {
                       overflowX="scroll"
                     >
                       <pre style={{ margin: 0 }}>
-                        <code>
-                          {JSON.stringify(fetcher.data.product, null, 2)}
-                        </code>
+                        <code>{JSON.stringify(fetcher.data.product, null, 2)}</code>
                       </pre>
-                    </Box>
-                    <Text as="h3" variant="headingMd">
-                      {" "}
+                    </BoxComponent>
+
+                    <TextComponent as="h3" variant="headingMd">
                       productVariantsBulkUpdate mutation
-                    </Text>
-                    <Box
+                    </TextComponent>
+                    <BoxComponent
                       padding="400"
                       background="bg-surface-active"
                       borderWidth="025"
@@ -206,119 +221,110 @@ export default function Index() {
                       overflowX="scroll"
                     >
                       <pre style={{ margin: 0 }}>
-                        <code>
-                          {JSON.stringify(fetcher.data.variant, null, 2)}
-                        </code>
+                        <code>{JSON.stringify(fetcher.data.variant, null, 2)}</code>
                       </pre>
-                    </Box>
+                    </BoxComponent>
                   </>
                 )}
               </BlockStack>
-            </Card>
-          </Layout.Section>
-          <Layout.Section variant="oneThird">
+            </CardComponent>
+          </LayoutComponent.Section>
+
+          <LayoutComponent.Section variant="oneThird">
             <BlockStack gap="500">
-              <Card>
+              <CardComponent>
                 <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
+                  <TextComponent as="h2" variant="headingMd">
                     App template specs
-                  </Text>
+                  </TextComponent>
+
                   <BlockStack gap="200">
                     <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
+                      <TextComponent as="span" variant="bodyMd">
                         Framework
-                      </Text>
-                      <Link
-                        url="https://remix.run"
-                        target="_blank"
-                        removeUnderline
-                      >
+                      </TextComponent>
+                      <LinkComponent url="https://remix.run" target="_blank" removeUnderline>
                         Remix
-                      </Link>
+                      </LinkComponent>
                     </InlineStack>
+
                     <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
+                      <TextComponent as="span" variant="bodyMd">
                         Database
-                      </Text>
-                      <Link
-                        url="https://www.prisma.io/"
-                        target="_blank"
-                        removeUnderline
-                      >
+                      </TextComponent>
+                      <LinkComponent url="https://www.prisma.io/" target="_blank" removeUnderline>
                         Prisma
-                      </Link>
+                      </LinkComponent>
                     </InlineStack>
+
                     <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
+                      <TextComponent as="span" variant="bodyMd">
                         Interface
-                      </Text>
+                      </TextComponent>
                       <span>
-                        <Link
-                          url="https://polaris.shopify.com"
-                          target="_blank"
-                          removeUnderline
-                        >
+                        <LinkComponent url="https://polaris.shopify.com" target="_blank" removeUnderline>
                           Polaris
-                        </Link>
+                        </LinkComponent>
                         {", "}
-                        <Link
+                        <LinkComponent
                           url="https://shopify.dev/docs/apps/tools/app-bridge"
                           target="_blank"
                           removeUnderline
                         >
                           App Bridge
-                        </Link>
+                        </LinkComponent>
                       </span>
                     </InlineStack>
+
                     <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
+                      <TextComponent as="span" variant="bodyMd">
                         API
-                      </Text>
-                      <Link
+                      </TextComponent>
+                      <LinkComponent
                         url="https://shopify.dev/docs/api/admin-graphql"
                         target="_blank"
                         removeUnderline
                       >
                         GraphQL API
-                      </Link>
+                      </LinkComponent>
                     </InlineStack>
                   </BlockStack>
                 </BlockStack>
-              </Card>
-              <Card>
+              </CardComponent>
+
+              <CardComponent>
                 <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
+                  <TextComponent as="h2" variant="headingMd">
                     Next steps
-                  </Text>
-                  <List>
-                    <List.Item>
+                  </TextComponent>
+                  <ListComponent>
+                    <ListComponent.Item>
                       Build an{" "}
-                      <Link
+                      <LinkComponent
                         url="https://shopify.dev/docs/apps/getting-started/build-app-example"
                         target="_blank"
                         removeUnderline
                       >
-                        {" "}
                         example app
-                      </Link>{" "}
+                      </LinkComponent>{" "}
                       to get started
-                    </List.Item>
-                    <List.Item>
+                    </ListComponent.Item>
+                    <ListComponent.Item>
                       Explore Shopifyâ€™s API with{" "}
-                      <Link
+                      <LinkComponent
                         url="https://shopify.dev/docs/apps/tools/graphiql-admin-api"
                         target="_blank"
                         removeUnderline
                       >
                         GraphiQL
-                      </Link>
-                    </List.Item>
-                  </List>
+                      </LinkComponent>
+                    </ListComponent.Item>
+                  </ListComponent>
                 </BlockStack>
-              </Card>
+              </CardComponent>
             </BlockStack>
-          </Layout.Section>
-        </Layout>
+          </LayoutComponent.Section>
+        </LayoutComponent>
       </BlockStack>
     </Page>
   );

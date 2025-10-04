@@ -1,4 +1,4 @@
-﻿// app/routes/auth/index.jsx
+// app/routes/auth/index.jsx
 import { redirect } from "@remix-run/node";
 
 /**
@@ -14,7 +14,7 @@ export const loader = async ({ request }) => {
     throw new Response("Missing shop", { status: 400 });
   }
 
-  // Kiá»ƒm tra biáº¿n mÃ´i trÆ°á»ng
+  // KiÃƒÂ¡Ã‚Â»Ã†â€™m tra biÃƒÂ¡Ã‚ÂºÃ‚Â¿n mÃƒÆ’Ã‚Â´i trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âng
   const clientId = process.env.SHOPIFY_API_KEY;
   const appUrl = process.env.SHOPIFY_APP_URL;
   if (!clientId || !appUrl) {
@@ -22,7 +22,7 @@ export const loader = async ({ request }) => {
     throw new Response("Server misconfigured", { status: 500 });
   }
 
-  // state minimal (production: lÆ°u vÃ o session)
+  // state minimal (production: lÃƒâ€ Ã‚Â°u vÃƒÆ’Ã‚Â o session)
   const state = Math.random().toString(36).substring(2, 12);
   const params = new URLSearchParams({
     client_id: clientId,

@@ -1,4 +1,4 @@
-﻿// app/db/db.server.js
+// app/db/db.server.js
 import { PrismaClient } from "@prisma/client";
 
 let db;

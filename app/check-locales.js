@@ -1,4 +1,4 @@
-﻿// check-locales.js (Ä‘áº·t táº¡i root)
+// check-locales.js (Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚ÂºÃ‚Â·t tÃƒÂ¡Ã‚ÂºÃ‚Â¡i root)
 const fs = require('fs');
 const path = require('path');
 

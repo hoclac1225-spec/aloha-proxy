@@ -1,4 +1,4 @@
-﻿// app/test-db.js
+// app/test-db.js
 import prisma from "./db.server.js";
 
 async function main() {

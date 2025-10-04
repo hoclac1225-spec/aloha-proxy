@@ -1,4 +1,4 @@
-﻿// app/routes/webhooks.app.uninstalled.jsx
+// app/routes/webhooks.app.uninstalled.jsx
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 
@@ -8,7 +8,7 @@ export const action = async ({ request }) => {
 
     console.log(`? Received ${topic} webhook for ${shop}`);
 
-    // N?u session t?n t?i, xï¿½a d? li?u liï¿½n quan shop
+    // N?u session t?n t?i, xÃƒÂ¯Ã‚Â¿Ã‚Â½a d? li?u liÃƒÂ¯Ã‚Â¿Ã‚Â½n quan shop
     if (session) {
       await db.session.deleteMany({ where: { shop } });
       console.log(`?? Deleted session(s) for shop: ${shop}`);

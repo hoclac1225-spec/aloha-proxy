@@ -1,5 +1,5 @@
-﻿import { json } from "@remix-run/node";
+import { json } from "@remix-run/node";
 
 export async function loader() {
-  return json({ message: "Proxy connected thÃ nh cÃ´ng ðŸš€ (via /hello)" });
+  return json({ message: "Proxy connected thÃƒÆ’Ã‚Â nh cÃƒÆ’Ã‚Â´ng ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬ (via /hello)" });
 }

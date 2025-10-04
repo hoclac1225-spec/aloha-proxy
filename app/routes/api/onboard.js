@@ -1,6 +1,6 @@
-﻿// app/routes/api/onboard.js  (Remix action example)
+// app/routes/api/onboard.js  (Remix action example)
 import { json } from "@remix-run/node";
-import { prisma } from "~/db.server"; // hoáº·c Ä‘Ãºng Ä‘Æ°á»ng import prisma trong project
+import { prisma } from "~/db.server"; // hoÃƒÂ¡Ã‚ÂºÃ‚Â·c Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Âºng Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âng import prisma trong project
 
 export const action = async ({ request }) => {
   try {
