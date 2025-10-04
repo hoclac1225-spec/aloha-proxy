@@ -1,13 +1,27 @@
 import { useEffect } from "react";
 import { useFetcher } from "@remix-run/react";
-import {
+
+// Polaris: import default để tương thích CommonJS -> ESM
+import polaris from "@shopify/polaris";
+// Destructure các component bạn dùng
+const {
+  Page,
   Card,
   Button,
-  /* BlockStack, */ 
-  VerticalStack, // hoặc LegacyStack nếu VerticalStack không tồn tại
+  /* BlockStack, */
+  VerticalStack,
+  LegacyStack,
   Box,
   List,
-} from '@shopify/polaris';
+  Layout,
+  Text,
+  Link,
+  InlineStack,
+} = polaris;
+// fallback nếu VerticalStack không tồn tại trong phiên bản Polaris
+const Stack = VerticalStack || LegacyStack;
+// dùng Stack thay cho VerticalStack/LegacyStack
+const BlockStack = Stack;
 
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -89,25 +103,26 @@ export default function Index() {
   const isLoading =
     ["loading", "submitting"].includes(fetcher.state) &&
     fetcher.formMethod === "POST";
-  const productId = fetcher.data?.product?.id.replace(
+  const productId = fetcher.data?.product?.id?.replace?.(
     "gid://shopify/Product/",
     "",
   );
 
   useEffect(() => {
-    if (productId) {
-      shopify.toast.show("Product created");
+    if (productId && shopify && shopify.toast && typeof shopify.toast.show === "function") {
+      try {
+        shopify.toast.show("Product created");
+      } catch {
+        // noop if toast interface differs
+      }
     }
   }, [productId, shopify]);
+
   const generateProduct = () => fetcher.submit({}, { method: "POST" });
 
   return (
     <Page>
-      <TitleBar title="Remix app template">
-        <button variant="primary" onClick={generateProduct}>
-          Generate a product
-        </button>
-      </TitleBar>
+      <TitleBar title="Remix app template" />
       <BlockStack gap="500">
         <Layout>
           <Layout.Section>
@@ -142,6 +157,7 @@ export default function Index() {
                     development.
                   </Text>
                 </BlockStack>
+
                 <BlockStack gap="200">
                   <Text as="h3" variant="headingMd">
                     Get started with products
@@ -159,6 +175,7 @@ export default function Index() {
                     mutation in our API references.
                   </Text>
                 </BlockStack>
+
                 <InlineStack gap="300">
                   <Button loading={isLoading} onClick={generateProduct}>
                     Generate a product
@@ -173,10 +190,10 @@ export default function Index() {
                     </Button>
                   )}
                 </InlineStack>
+
                 {fetcher.data?.product && (
                   <>
                     <Text as="h3" variant="headingMd">
-                      {" "}
                       productCreate mutation
                     </Text>
                     <Box
@@ -193,8 +210,8 @@ export default function Index() {
                         </code>
                       </pre>
                     </Box>
+
                     <Text as="h3" variant="headingMd">
-                      {" "}
                       productVariantsBulkUpdate mutation
                     </Text>
                     <Box
@@ -216,6 +233,7 @@ export default function Index() {
               </BlockStack>
             </Card>
           </Layout.Section>
+
           <Layout.Section variant="oneThird">
             <BlockStack gap="500">
               <Card>
@@ -236,6 +254,7 @@ export default function Index() {
                         Remix
                       </Link>
                     </InlineStack>
+
                     <InlineStack align="space-between">
                       <Text as="span" variant="bodyMd">
                         Database
@@ -248,6 +267,7 @@ export default function Index() {
                         Prisma
                       </Link>
                     </InlineStack>
+
                     <InlineStack align="space-between">
                       <Text as="span" variant="bodyMd">
                         Interface
@@ -270,6 +290,7 @@ export default function Index() {
                         </Link>
                       </span>
                     </InlineStack>
+
                     <InlineStack align="space-between">
                       <Text as="span" variant="bodyMd">
                         API
@@ -285,6 +306,7 @@ export default function Index() {
                   </BlockStack>
                 </BlockStack>
               </Card>
+
               <Card>
                 <BlockStack gap="200">
                   <Text as="h2" variant="headingMd">
@@ -298,7 +320,6 @@ export default function Index() {
                         target="_blank"
                         removeUnderline
                       >
-                        {" "}
                         example app
                       </Link>{" "}
                       to get started
