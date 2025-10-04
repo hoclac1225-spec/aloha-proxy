@@ -1,34 +1,11 @@
 import path from "path";
-import fs from "fs";
 import { vitePlugin as remix } from "@remix-run/dev";
 import { installGlobals } from "@remix-run/node";
 import { defineConfig, loadEnv } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
-import stripBom from "strip-bom";
+import json from "@rollup/plugin-json";
 
 installGlobals({ nativeFetch: true });
-
-// Plugin debug JSON
-function debugJsonPlugin() {
-  return {
-    name: "debug-json",
-    enforce: "pre",
-    transform(code, id) {
-      if (id.endsWith(".json")) {
-        const cleaned = stripBom(code);
-        console.log(`🔍 [DEBUG] JSON file: ${id}`);
-        console.log("🔍 [DEBUG] Preview first 200 chars:\n", cleaned.slice(0, 200));
-        try {
-          JSON.parse(cleaned);
-          console.log(`✅ [DEBUG] JSON parse OK: ${id}`);
-        } catch (e) {
-          console.error(`❌ [DEBUG] JSON parse ERROR: ${id} :`, e.message);
-        }
-      }
-      return null;
-    },
-  };
-}
 
 export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -55,11 +32,7 @@ export default ({ mode }) => {
       alias: [
         { find: "~", replacement: path.resolve(process.cwd(), "app") },
         { find: "~/lib", replacement: path.resolve(process.cwd(), "app/lib") },
-        // Bypass Rollup parse lỗi JSON
-        {
-          find: "@shopify/polaris/locales/en.json",
-          replacement: path.resolve(process.cwd(), "app/locales/en.json") + "?raw",
-        },
+        { find: "@shopify/polaris/locales/en.json", replacement: path.resolve(process.cwd(), "app/locales/en.json") },
       ],
     },
     server: {
@@ -77,7 +50,12 @@ export default ({ mode }) => {
       fs: { allow: ["app", "node_modules"] },
     },
     plugins: [
-      debugJsonPlugin(),
+      json({
+        compact: false,
+        namedExports: false,
+        preferConst: true,
+        esModule: false,
+      }),
       remix({
         ignoredRouteFiles: ["**/.*"],
         future: {
@@ -91,10 +69,16 @@ export default ({ mode }) => {
       }),
       tsconfigPaths(),
     ],
-    build: { assetsInlineLimit: 0 },
+    build: {
+      assetsInlineLimit: 0,
+      rollupOptions: {
+        // loại bỏ server-only module khỏi bundle frontend
+        external: ["@shopify/shopify-app-remix/server"],
+      },
+    },
     optimizeDeps: {
       include: ["@shopify/app-bridge-react", "@shopify/polaris"],
-      exclude: ["@shopify/polaris/locales/en.json"],
+      exclude: ["@shopify/polaris/locales/en.json", "@shopify/shopify-app-remix/server"],
     },
   });
 };
