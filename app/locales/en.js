@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:app/locales/en.js
 export default {
+========
+﻿{
+>>>>>>>> 7741f98 (wip: backup before bulk replace):app/locales/en.json
   "Polaris": {
     "Common": {
       "pagination": {
