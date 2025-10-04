@@ -1,11 +1,27 @@
 import path from "path";
+import fs from "fs";
 import { vitePlugin as remix } from "@remix-run/dev";
 import { installGlobals } from "@remix-run/node";
 import { defineConfig, loadEnv } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import json from "@rollup/plugin-json";
+import stripBom from "strip-bom";
 
 installGlobals({ nativeFetch: true });
+
+// Plugin nhẹ loại bỏ BOM trước khi parse JSON
+function stripBomPlugin() {
+  return {
+    name: "strip-bom-json",
+    enforce: "pre",
+    transform(code, id) {
+      if (id.endsWith(".json")) {
+        return stripBom(code);
+      }
+      return null;
+    },
+  };
+}
 
 export default ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -50,12 +66,12 @@ export default ({ mode }) => {
       fs: { allow: ["app", "node_modules"] },
     },
     plugins: [
-      // plugin JSON đã tinh giản, không cần strip-bom
+      stripBomPlugin(),
       json({
-        compact: false,       // giữ format dễ đọc
-        namedExports: false,  // tránh lỗi import JSON
-        preferConst: true,    // export const thay vì var
-        esModule: false       // parse JSON thuần
+        compact: false,
+        namedExports: false,
+        preferConst: true,
+        esModule: false,
       }),
       remix({
         ignoredRouteFiles: ["**/.*"],
