@@ -1,4 +1,4 @@
-﻿// app/routes/index.jsx
+// app/routes/index.jsx
 import { useEffect, useState } from "react";
 import { useLoaderData } from "@remix-run/react";
 import { startOnboarding } from "../../src/js/onboarding.js"; // náº¿u file thá»±c sá»± á»Ÿ src/js

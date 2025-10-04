@@ -1,4 +1,4 @@
-﻿// app/routes/auth/index.jsx
+// app/routes/auth/index.jsx
 import { redirect } from "@remix-run/node";
 
 /**

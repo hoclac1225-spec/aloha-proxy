@@ -1,4 +1,4 @@
-﻿import { redirect } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 
 export const action = async ({ request }) => {
   const form = await request.formData();

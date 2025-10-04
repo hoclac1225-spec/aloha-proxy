@@ -1,4 +1,4 @@
-﻿// app/routes/api/onboard/index.test.jsx
+// app/routes/api/onboard/index.test.jsx
 import { json } from "@remix-run/node";
 import { prisma } from "../../../db.server"; // tá»« app/routes/api/onboard -> app/db.server.js (lÃªn 3 cáº¥p)
 

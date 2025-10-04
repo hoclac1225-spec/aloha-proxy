@@ -1,4 +1,4 @@
-﻿// lib/shopify.js
+// lib/shopify.js
 import fetch from "node-fetch"; // hoáº·c global fetch náº¿u Node 18+
 
 export async function createShopifyCustomer(data) {

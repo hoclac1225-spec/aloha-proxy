@@ -1,4 +1,4 @@
-﻿// app/routes/api/onboard.js  (Remix action example)
+// app/routes/api/onboard.js  (Remix action example)
 import { json } from "@remix-run/node";
 import { prisma } from "~/db.server"; // hoáº·c Ä‘Ãºng Ä‘Æ°á»ng import prisma trong project
 

@@ -1,4 +1,4 @@
-﻿// app/db.server.js
+// app/db.server.js
 // Export named `prisma` Ä‘á»ƒ cÃ¡c file khÃ¡c (vÃ­ dá»¥: import { prisma } from "~/db.server") hoáº¡t Ä‘á»™ng.
 // DÃ¹ng globalThis Ä‘á»ƒ giá»¯ instance PrismaClient trong mÃ´i trÆ°á»ng dev (hot reload).
 import { PrismaClient } from "@prisma/client";

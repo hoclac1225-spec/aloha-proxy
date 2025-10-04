@@ -1,4 +1,4 @@
-﻿// app/routes/api.onboard.jsx
+// app/routes/api.onboard.jsx
 import { json } from "@remix-run/node";
 import { prisma } from "~/lib/prisma.server";
 

@@ -1,4 +1,4 @@
-﻿// utils.js
+// utils.js
 
 // Chuyá»ƒn object thÃ nh query string
 export function toQueryString(params) {
