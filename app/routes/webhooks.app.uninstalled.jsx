@@ -1,4 +1,4 @@
-// app/routes/webhooks.app.uninstalled.jsx
+﻿// app/routes/webhooks.app.uninstalled.jsx
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 

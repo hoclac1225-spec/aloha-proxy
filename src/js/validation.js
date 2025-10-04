@@ -1,4 +1,4 @@
-export function validateUser(userData) {
+﻿export function validateUser(userData) {
   if (!userData) return "User data is missing";
   if (!userData.name || userData.name.trim() === "") return "Name is required";
   if (!userData.email || userData.email.trim() === "") return "Email is required";
