@@ -2,9 +2,11 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# copy package.json và cài dev deps
+# copy package.json và package-lock.json
 COPY package*.json ./
-RUN npm ci
+
+# dùng npm install thay vì npm ci để tránh fail do lock file
+RUN npm install --omit=dev
 
 # copy toàn bộ code và build
 COPY . .
@@ -18,16 +20,14 @@ WORKDIR /app
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 
-# copy package.json và cài production deps
+# copy package.json và package-lock.json
 COPY package*.json ./
-RUN npm ci --omit=dev
+
+# cài production dependencies
+RUN npm install --omit=dev
 
 # copy build, public và prisma từ builder
 COPY --from=builder /app/build ./build
-
-# Copy file server cần thiết (nếu có)
-# NOTE: runtime copy of remix.config.js intentionally removed to fix Docker build
-
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
