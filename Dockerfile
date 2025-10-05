@@ -2,14 +2,14 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# copy package jsons and scripts early so postinstall script exists during npm ci
+# copy package files and scripts early
 COPY package*.json ./
 COPY scripts ./scripts
 
-# install all deps (dev + prod) for build
+# install deps (dev + prod) for build
 RUN npm ci
 
-# copy rest of source & build
+# copy source & build
 COPY . .
 RUN npm run build
 
@@ -21,31 +21,27 @@ WORKDIR /app
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
-# set optional database arg
+# optional DB arg passed during build time
 ARG DATABASE_URL
 ENV DATABASE_URL=${DATABASE_URL}
 
-# copy package.json & scripts (so postinstall won't fail if run)
+# copy package.json and scripts (for consistency)
 COPY package*.json ./
 COPY scripts ./scripts
 
-# install only production deps (postinstall will run but scripts exists)
-RUN npm ci --omit=dev
+# copy production node_modules from builder (faster & consistent)
+COPY --from=builder /app/node_modules ./node_modules
 
-# copy build output and public assets from builder
+# copy build and runtime assets
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/server.js ./server.js
 
-# copy any other runtime files you need (server.js, etc.)
-COPY server.js ./server.js
-
-# copy entrypoint (below content provided) and make executable
+# copy entrypoint and make executable
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
 EXPOSE 3000
 
-# start
 ENTRYPOINT ["./entrypoint.sh"]
