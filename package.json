@@ -6,7 +6,7 @@
   "scripts": {
   "dev": "remix dev",
   "build": "remix build",
-  "start": "node src/server.js",
+  "start": "node --loader esm src/server.js",
   "postinstall": "node -e \"const fs=require('fs'); if(process.env.NODE_ENV === 'production' && !fs.existsSync('./scripts/postinstall-patch-shopify.js')) { console.log('postinstall script missing in production - skipping'); process.exit(0);} if(fs.existsSync('./scripts/postinstall-patch-shopify.js')){ require('./scripts/postinstall-patch-shopify.js'); } else { console.log('postinstall: script not found - skipping'); }\""
 },
   "dependencies": {
