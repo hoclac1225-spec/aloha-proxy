@@ -1,45 +1,31 @@
-import { spawn } from "node:child_process";
-import path from "node:path";
-import fs from "node:fs";
+// src/server.js
+import express from "express";
+import "./lib/shopify-init.js"; // phải import đầu tiên
 
-const buildPath = path.resolve(process.cwd(), "build", "server", "index.cjs");
-const port = process.env.PORT || "3000"; // fallback local dev
+const app = express();
 
-if (!fs.existsSync(buildPath)) {
-  console.error("Build file not found:", buildPath);
-  console.error("Please run `npm run build` before starting.");
-  process.exit(1);
-}
-
-console.log(`Starting built server: ${buildPath}`);
-console.log(`PORT=${port}`);
-console.log(`HOST=${process.env.HOST}`);
-
-const child = spawn(process.execPath, [buildPath], {
-  stdio: "inherit",
-  env: { ...process.env, PORT: port },
+// test route
+app.get("/", (req, res) => {
+  res.send("Shopify server running ✅");
 });
 
-["SIGINT", "SIGTERM", "SIGHUP"].forEach((sig) => {
-  process.on(sig, () => {
-    if (!child.killed) {
-      console.log(`Main process received ${sig}, forwarding to child...`);
-      child.kill(sig);
-    }
-  });
-});
-
-child.on("exit", (code, signal) => {
-  if (signal) {
-    console.log(`Child exited with signal ${signal}`);
-    process.exit(1);
-  } else {
-    console.log(`Child exited with code ${code}`);
-    process.exit(code ?? 0);
+// ví dụ route để test customer create
+import { createShopifyCustomer } from "../app/lib/shopify.js";
+app.get("/test-customer", async (req, res) => {
+  try {
+    const customer = await createShopifyCustomer({
+      name: "Test User",
+      email: "test@example.com",
+      phone: "0123456789",
+    });
+    res.json(customer);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send(err.message);
   }
 });
 
-child.on("error", (err) => {
-  console.error("Failed to start child process:", err);
-  process.exit(1);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`[server] Listening on port ${PORT}`);
 });
