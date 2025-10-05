@@ -2,11 +2,14 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# copy package.json và cài dev deps
+# copy package jsons and scripts early so postinstall script exists during npm ci
 COPY package*.json ./
+COPY scripts ./scripts
+
+# install all deps (dev + prod) for build
 RUN npm ci
 
-# copy toàn bộ code và build
+# copy rest of source & build
 COPY . .
 RUN npm run build
 
@@ -14,29 +17,35 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# thiết lập biến môi trường database
-ARG DATABASE_URL
-ENV DATABASE_URL=$DATABASE_URL
+# set production env by default
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
 
-# copy package.json và cài production deps
+# set optional database arg
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
+
+# copy package.json & scripts (so postinstall won't fail if run)
 COPY package*.json ./
+COPY scripts ./scripts
+
+# install only production deps (postinstall will run but scripts exists)
 RUN npm ci --omit=dev
 
-# copy build, public và prisma từ builder
+# copy build output and public assets from builder
 COPY --from=builder /app/build ./build
-
-# Copy file server cần thiết (nếu có)
-# NOTE: runtime copy of remix.config.js intentionally removed to fix Docker build
-
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules ./node_modules
 
-# copy entrypoint
+# copy any other runtime files you need (server.js, etc.)
+COPY server.js ./server.js
+
+# copy entrypoint (below content provided) and make executable
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
-# expose port
 EXPOSE 3000
 
-# chạy entrypoint khi container start
+# start
 ENTRYPOINT ["./entrypoint.sh"]
