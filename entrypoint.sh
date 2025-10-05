@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 
-echo "[entrypoint] starting"
+echo "[entrypoint] starting container"
 
-# Prisma steps
+# --- Prisma generate & migrate ---
 if [ -n "$SKIP_PRISMA" ] && [ "$SKIP_PRISMA" != "0" ]; then
   echo "[entrypoint] SKIP_PRISMA set; skipping prisma generate/migrate"
 else
@@ -22,15 +22,15 @@ else
   fi
 fi
 
-# ensure PORT
+# --- PORT ---
 if [ -z "$PORT" ]; then
   PORT=3000
   export PORT
-  echo "[entrypoint] PORT not set -> defaulting to $PORT"
+  echo "[entrypoint] PORT not set, defaulting to $PORT"
 else
   echo "[entrypoint] PORT=$PORT"
 fi
 
-echo "[entrypoint] starting node app in foreground"
-# ensure Node process stays in foreground
-exec node build/server.js
+echo "[entrypoint] starting Node app in foreground..."
+# start app in foreground so container stays alive
+exec npm run start
