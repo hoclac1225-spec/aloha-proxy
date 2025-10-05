@@ -1,3 +1,18 @@
+# Stage 1: Builder
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# copy và cài dependencies
+COPY package*.json ./
+RUN npm ci
+
+# copy toàn bộ source
+COPY . .
+
+# build nếu cần (Remix)
+RUN npm run build
+
+# Stage 2: Runner
 FROM node:20-alpine AS runner
 WORKDIR /app
 
@@ -6,8 +21,7 @@ ENV NODE_ENV=${NODE_ENV}
 ARG DATABASE_URL
 ENV DATABASE_URL=${DATABASE_URL}
 
-# copy package.json & node_modules
-COPY package*.json ./ 
+# copy node_modules từ builder
 COPY --from=builder /app/node_modules ./node_modules
 
 # copy build & runtime assets
