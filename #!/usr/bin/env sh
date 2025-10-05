@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+set -e
+
+# optional: run prisma migrate deploy if you want DB migrations on start
+# uncomment if you expect migrations to be applied automatically in runtime
+# if [ "${NODE_ENV}" = "production" ]; then
+#   npx prisma migrate deploy
+# fi
+
+# ensure PORT fallback
+if [ -z "$PORT" ]; then
+  PORT=3000
+fi
+
+# start the remix app (production server)
+exec node build/server/index.cjs
