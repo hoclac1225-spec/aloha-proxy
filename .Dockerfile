@@ -1,37 +1,51 @@
-# --- builder stage ---
+# --- builder ---
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy package files and install dependencies
+# copy package jsons and scripts early so postinstall script exists during npm ci
 COPY package*.json ./
+COPY scripts ./scripts
+
+# install all deps (dev + prod) for build
 RUN npm ci
 
-# Copy all source code
+# copy rest of source & build
 COPY . .
-
-# Build the Remix app
 RUN npm run build
 
-# --- final/runtime stage ---
+# --- runner/runtime ---
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Copy package files and install only production deps
+# set production env by default
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
+
+# set optional database arg
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
+
+# copy package.json & scripts (so postinstall won't fail if run)
 COPY package*.json ./
+COPY scripts ./scripts
+
+# install only production deps (postinstall will run but scripts exists)
 RUN npm ci --omit=dev
 
-# Copy built files and public assets from builder
+# copy build output and public assets from builder
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/public ./public
-
-# Copy prisma schema & generated client
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules ./node_modules
 
-# Generate Prisma client if schema exists
-RUN if [ -f prisma/schema.prisma ]; then npx prisma generate; fi
+# copy any other runtime files you need (server.js, etc.)
+COPY server.js ./server.js
 
-# Expose the port Remix will run on
+# copy entrypoint (below content provided) and make executable
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
 EXPOSE 3000
 
-# Start the app
-CMD ["npm", "run", "start"]
+# start
+ENTRYPOINT ["./entrypoint.sh"]
