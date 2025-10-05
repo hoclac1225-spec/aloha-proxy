@@ -1,20 +1,42 @@
 #!/bin/sh
 set -e
 
-# optional: export runtime env from ARG or keep Render env
-# ensure prisma client is generated (if needed)
-if [ -f "./node_modules/.prisma/client/index.js" ]; then
-  echo "Prisma client exists"
+echo "[entrypoint] starting"
+
+# Optionally skip prisma steps
+if [ -n "$SKIP_PRISMA" ] && [ "$SKIP_PRISMA" != "0" ]; then
+  echo "[entrypoint] SKIP_PRISMA set; skipping prisma generate/migrate"
 else
-  echo "Generating prisma client"
-  npx prisma generate
+  if [ -f "./prisma/schema.prisma" ]; then
+    echo "[entrypoint] prisma schema detected, running generate..."
+    # generate client (safe if already exists)
+    npx prisma generate || {
+      echo "[entrypoint] prisma generate failed (continuing)"; 
+    }
+
+    if [ -n "$DATABASE_URL" ] && [ -z "$SKIP_MIGRATIONS" ]; then
+      echo "[entrypoint] DATABASE_URL set, attempting prisma migrate deploy..."
+      # run migrations (best-effort; do not fail the container permanently if migrations fail)
+      npx prisma migrate deploy || {
+        echo "[entrypoint] prisma migrate deploy failed (continuing). If you want to fail on migration error, unset SKIP_PRISMA and SKIP_MIGRATIONS."
+      }
+    else
+      echo "[entrypoint] skipping migrations (DATABASE_URL empty or SKIP_MIGRATIONS set)"
+    fi
+  else
+    echo "[entrypoint] no prisma/schema.prisma found, skipping prisma generate/migrate"
+  fi
 fi
 
-# run migrations if env indicates
-if [ -n "$DATABASE_URL" ]; then
-  echo "Running prisma migrate deploy (if any)"
-  npx prisma migrate deploy || true
+# ensure PORT is set for compatibility
+if [ -z "$PORT" ]; then
+  PORT=3000
+  export PORT
+  echo "[entrypoint] PORT not set -> defaulting to $PORT"
+else
+  echo "[entrypoint] PORT=$PORT"
 fi
 
-# finally start the app - ensure it uses process.env.PORT
+echo "[entrypoint] starting node app (npm start)"
+# exec to replace shell with node process so signals are handled properly
 exec npm start
