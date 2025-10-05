@@ -8,8 +8,8 @@ const prisma = new PrismaClient();
 Shopify.Context.initialize({
   API_KEY: process.env.SHOPIFY_API_KEY,
   API_SECRET_KEY: process.env.SHOPIFY_API_SECRET,
-  SCOPES: process.env.SCOPES.split(","),
-  HOST_NAME: process.env.HOST.replace(/https?:\/\//, ""),
+  SCOPES: process.env.SCOPES?.split(",") || [],
+  HOST_NAME: process.env.HOST?.replace(/^https?:\/\//, ""),
   IS_EMBEDDED_APP: true,
   SESSION_STORAGE: new PrismaSessionStorage(prisma),
 });
