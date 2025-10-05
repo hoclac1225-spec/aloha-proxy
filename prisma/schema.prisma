@@ -9,9 +9,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-/*
-  Model existing users
-*/
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
@@ -21,11 +18,6 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
-/*
-  Session model for @shopify/shopify-app-session-storage-prisma
-  - Thêm model này và chạy prisma migrate để tạo bảng `Session` trong DB.
-  - Trường `data` / `onlineAccess` dùng Json để lưu payload nếu cần.
-*/
 model Session {
   id           String   @id @default(cuid())
   shop         String
@@ -34,10 +26,10 @@ model Session {
   expiresAt    DateTime?
   accessToken  String?
   scope        String?
-  onlineAccess Json?      // optional: store online access info
-  data         Json?      // optional: raw session payload
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  onlineAccess Json?
+  data         Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  @@map("Session") // ánh xạ tên bảng chính xác (không bắt buộc)
+  @@map("Session")
 }
