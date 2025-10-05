@@ -1,7 +1,5 @@
-// src/server.js
 import express from "express";
 import "../lib/shopify-init.js"; // phải import đầu tiên
-
 import { createShopifyCustomer } from "../app/lib/shopify.js";
 
 const app = express();
@@ -22,6 +20,7 @@ app.get("/test-customer", async (req, res) => {
   }
 });
 
+// Listen đúng port Render yêu cầu
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`[server] Listening on port ${PORT}`);
