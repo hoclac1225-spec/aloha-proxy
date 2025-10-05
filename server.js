@@ -17,10 +17,9 @@ console.log(`HOST=${process.env.HOST}`);
 
 const child = spawn(process.execPath, [buildPath], {
   stdio: "inherit",
-  env: { ...process.env, PORT: port }, // quan trọng: forward đúng env
+  env: { ...process.env, PORT: port },
 });
 
-// forward signals to child so process can terminate gracefully
 ["SIGINT", "SIGTERM", "SIGHUP"].forEach((sig) => {
   process.on(sig, () => {
     if (!child.killed) {
