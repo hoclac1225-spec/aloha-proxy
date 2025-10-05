@@ -1,35 +1,50 @@
 // server.js
-// Chỉ dùng để start build output (Remix server bundle).
-import http from "node:http";
-import { fileURLToPath } from "node:url";
-import path from "path";
-import { spawnSync } from "child_process";
+// Run the built Remix server bundle as a child process and forward signals.
+// This wrapper ensures better signal handling in containers and clearer errors.
 
-const PORT = process.env.PORT || 3000;
+import { spawn } from "node:child_process";
+import path from "node:path";
+import fs from "node:fs";
 
-// Nếu build output không tồn tại, gợi ý build
 const buildPath = path.resolve(process.cwd(), "build", "server", "index.cjs");
-try {
-  // Check file exists
-  await import('fs').then(fs => {
-    if (!fs.existsSync(buildPath)) {
-      console.error("Build file not found:", buildPath);
-      console.error("Chạy `npm run build` trước khi start.");
-      process.exit(1);
-    }
-  });
-} catch (e) {
-  console.error("Kiểm tra build failed:", e);
+const port = process.env.PORT || "3000";
+
+if (!fs.existsSync(buildPath)) {
+  console.error("Build file not found:", buildPath);
+  console.error("Please run `npm run build` before starting.");
   process.exit(1);
 }
 
-// Khởi chạy bundle bằng node child (an toàn hơn so chạy require/do chuyển đổi module type)
-const child = spawnSync(process.execPath, [buildPath], {
+console.log(`Starting built server: ${buildPath}`);
+console.log(`PORT=${port}`);
+
+const child = spawn(process.execPath, [buildPath], {
   stdio: "inherit",
-  env: process.env
+  env: { ...process.env, PORT: port },
 });
 
-if (child.error) {
-  console.error("Failed to start build server:", child.error);
+// forward signals to child so process can terminate gracefully
+const signals = ["SIGINT", "SIGTERM", "SIGHUP"];
+signals.forEach((sig) => {
+  process.on(sig, () => {
+    if (!child.killed) {
+      console.log(`Main process received ${sig}, forwarding to child...`);
+      child.kill(sig);
+    }
+  });
+});
+
+child.on("exit", (code, signal) => {
+  if (signal) {
+    console.log(`Child exited with signal ${signal}`);
+    process.exit(1);
+  } else {
+    console.log(`Child exited with code ${code}`);
+    process.exit(code ?? 0);
+  }
+});
+
+child.on("error", (err) => {
+  console.error("Failed to start child process:", err);
   process.exit(1);
-}
+});
