@@ -1,13 +1,9 @@
-// server.js
-// Run the built Remix server bundle as a child process and forward signals.
-// This wrapper ensures better signal handling in containers and clearer errors.
-
 import { spawn } from "node:child_process";
 import path from "node:path";
 import fs from "node:fs";
 
 const buildPath = path.resolve(process.cwd(), "build", "server", "index.cjs");
-const port = process.env.PORT || "3000";
+const port = process.env.PORT || "3000"; // fallback local dev
 
 if (!fs.existsSync(buildPath)) {
   console.error("Build file not found:", buildPath);
@@ -17,15 +13,15 @@ if (!fs.existsSync(buildPath)) {
 
 console.log(`Starting built server: ${buildPath}`);
 console.log(`PORT=${port}`);
+console.log(`HOST=${process.env.HOST}`);
 
 const child = spawn(process.execPath, [buildPath], {
   stdio: "inherit",
-  env: { ...process.env, PORT: port },
+  env: { ...process.env, PORT: port }, // quan trọng: forward đúng env
 });
 
 // forward signals to child so process can terminate gracefully
-const signals = ["SIGINT", "SIGTERM", "SIGHUP"];
-signals.forEach((sig) => {
+["SIGINT", "SIGTERM", "SIGHUP"].forEach((sig) => {
   process.on(sig, () => {
     if (!child.killed) {
       console.log(`Main process received ${sig}, forwarding to child...`);
