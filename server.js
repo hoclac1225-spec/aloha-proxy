@@ -1,16 +1,13 @@
 // src/server.js
 import express from "express";
-import "./lib/shopify-init.js"; // phải import đầu tiên
+import "../lib/shopify-init.js"; // phải import đầu tiên
+
+import { createShopifyCustomer } from "../app/lib/shopify.js";
 
 const app = express();
 
-// test route
-app.get("/", (req, res) => {
-  res.send("Shopify server running ✅");
-});
+app.get("/", (req, res) => res.send("Shopify server running ✅"));
 
-// ví dụ route để test customer create
-import { createShopifyCustomer } from "../app/lib/shopify.js";
 app.get("/test-customer", async (req, res) => {
   try {
     const customer = await createShopifyCustomer({
