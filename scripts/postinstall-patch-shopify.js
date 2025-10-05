@@ -19,6 +19,7 @@ try {
     const exts = [".mjs", ".js", ".cjs", ".jsx", ".ts", ".tsx"];
     const files = [];
 
+    // Hàm đệ quy quét file
     function walk(dir) {
       const items = fs.readdirSync(dir, { withFileTypes: true });
       for (const it of items) {
@@ -39,7 +40,9 @@ try {
     for (const f of files) {
       try {
         const txt = fs.readFileSync(f, "utf8");
-        if (re.test(txt)) {
+
+        // Chỉ chạy regex nếu file thực sự chứa chuỗi cần thay
+        if (txt.includes("with { type: \"json\" }")) {
           const newTxt = txt.replace(re, ";");
           fs.writeFileSync(f, newTxt, "utf8");
           patched++;
