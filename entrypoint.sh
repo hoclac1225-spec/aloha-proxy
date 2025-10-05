@@ -31,5 +31,6 @@ else
   echo "[entrypoint] PORT=$PORT"
 fi
 
-echo "[entrypoint] starting node app"
-exec node build/server/index.cjs
+echo "[entrypoint] starting node app in foreground"
+# ensure Node process stays in foreground
+exec node build/server.js
