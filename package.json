@@ -4,29 +4,30 @@
   "private": true,
   "type": "module",
   "scripts": {
-  "dev": "remix dev",
-  "build": "remix build",
-  "start": "node --loader esm src/server.js",
-  "postinstall": "node -e \"const fs=require('fs'); if(process.env.NODE_ENV === 'production' && !fs.existsSync('./scripts/postinstall-patch-shopify.js')) { console.log('postinstall script missing in production - skipping'); process.exit(0);} if(fs.existsSync('./scripts/postinstall-patch-shopify.js')){ require('./scripts/postinstall-patch-shopify.js'); } else { console.log('postinstall: script not found - skipping'); }\""
-},
+    "dev": "remix dev",
+    "build": "remix build",
+    "start": "node server.js",
+    "postinstall": "node -e \"const fs=require('fs'); if(process.env.NODE_ENV==='production'&&!fs.existsSync('./scripts/postinstall-patch-shopify.js')) { console.log('postinstall script missing in production - skipping'); process.exit(0);} if(fs.existsSync('./scripts/postinstall-patch-shopify.js')){ require('./scripts/postinstall-patch-shopify.js'); } else { console.log('postinstall: script not found - skipping'); }\""
+  },
   "dependencies": {
-    "@remix-run/react": "^2.17.1",
+    "@prisma/client": "^6.16.3",
     "@remix-run/node": "^2.17.1",
+    "@remix-run/react": "^2.17.1",
     "@remix-run/serve": "^2.17.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@shopify/polaris": "^13.9.5",
     "@shopify/app-bridge-react": "^4.2.4",
+    "@shopify/polaris": "^13.9.5",
+    "@shopify/shopify-api": "^12.0.0",
     "@shopify/shopify-app-remix": "^2.0.1",
     "@shopify/shopify-app-session-storage-prisma": "^7.0.0",
-    "@prisma/client": "^6.16.3"
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@remix-run/dev": "^2.17.1",
-    "remix": "^2.17.1",
-    "cross-env": "^7.0.3",
-    "vite": "^5.4.20",
     "esbuild": "^0.18.20",
-    "prisma": "^6.16.3"
+    "prisma": "^6.16.3",
+    "vite": "^5.4.20"
   }
 }

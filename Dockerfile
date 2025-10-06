@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # ===========================
-# 2. Copy scripts patch để postinstall chạy
+# 2. Copy script patch postinstall (nếu có)
 # ===========================
 COPY scripts/postinstall-patch-shopify.js ./scripts/
 
@@ -30,7 +30,7 @@ COPY . .
 RUN npm run build
 
 # ===========================
-# Stage 2: Runner
+# Stage 2: Runner (runtime)
 # ===========================
 FROM node:20-alpine AS runner
 WORKDIR /app
@@ -44,6 +44,11 @@ ARG DATABASE_URL
 ENV DATABASE_URL=${DATABASE_URL}
 
 # ===========================
+# Copy package.json và package-lock.json để npm có reference
+# ===========================
+COPY --from=builder /app/package*.json ./
+
+# ===========================
 # Copy node_modules từ builder
 # ===========================
 COPY --from=builder /app/node_modules ./node_modules
@@ -54,7 +59,6 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/src ./src
 
 # ===========================
 # Copy entrypoint và cấp quyền thực thi

@@ -1,17 +1,15 @@
-// lib/shopify-init.js
+// lib/shopify-init.mjs
+import "../lib/crypto-shim.mjs"; // <--- quan trọng, phải ở trên cùng
 import { Shopify } from "@shopify/shopify-api";
-import { PrismaClient } from "@prisma/client";
-import { PrismaSessionStorage } from "@shopify/shopify-api/dist/auth/session";
 
-const prisma = new PrismaClient();
-
-Shopify.Context.initialize({
-  API_KEY: process.env.SHOPIFY_API_KEY,
-  API_SECRET_KEY: process.env.SHOPIFY_API_SECRET,
-  SCOPES: process.env.SCOPES?.split(",") || [],
-  HOST_NAME: process.env.HOST?.replace(/^https?:\/\//, ""),
-  IS_EMBEDDED_APP: true,
-  SESSION_STORAGE: new PrismaSessionStorage(prisma),
+export const shopify = new Shopify({
+  apiKey: process.env.SHOPIFY_API_KEY,
+  apiSecretKey: process.env.SHOPIFY_API_SECRET,
+  scopes: process.env.SCOPES ? process.env.SCOPES.split(",") : [],
+  hostName: process.env.HOST.replace(/^https?:\/\//, ""),
+  apiVersion: "2025-07",
+  isEmbeddedApp: true,
+  sessionStorage: new Shopify.Session.MemorySessionStorage(),
 });
 
-console.log("[shopify-init] Shopify context initialized with PrismaSessionStorage");
+export { Shopify };
