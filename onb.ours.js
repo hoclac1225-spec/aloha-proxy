@@ -1,4 +1,4 @@
-﻿// src/js/onboarding.js
+// src/js/onboarding.js
 import { fetchJson } from "./api.js";
 
 /**

@@ -1,4 +1,4 @@
-﻿import fs from "fs";
+import fs from "fs";
 import stripBom from "strip-bom";
 
 const filePath = "./app/locales/en.js";

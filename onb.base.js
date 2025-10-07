@@ -1,4 +1,4 @@
-﻿// src/js/onboarding.js
+// src/js/onboarding.js
 import { validateUser } from "./validation.js";
 import { callAPI } from "./api.js";
 

@@ -1,4 +1,4 @@
-﻿const fs = require("fs");
+const fs = require("fs");
 const path = require("path");
 const base = path.join(__dirname, "..", "node_modules", "@shopify", "shopify-app-remix");
 if (!fs.existsSync(base)) {

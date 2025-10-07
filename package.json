@@ -1,33 +1,33 @@
 {
   "name": "aloha-proxy",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
   "scripts": {
     "dev": "remix dev",
     "build": "remix build",
-    "start": "node server.js",
-    "postinstall": "node -e \"const fs=require('fs'); if(process.env.NODE_ENV==='production'&&!fs.existsSync('./scripts/postinstall-patch-shopify.js')) { console.log('postinstall script missing in production - skipping'); process.exit(0);} if(fs.existsSync('./scripts/postinstall-patch-shopify.js')){ require('./scripts/postinstall-patch-shopify.js'); } else { console.log('postinstall: script not found - skipping'); }\""
+    "start": "remix-serve build/index.js"
   },
   "dependencies": {
     "@prisma/client": "^6.16.3",
-    "@remix-run/node": "^2.17.1",
-    "@remix-run/react": "^2.17.1",
-    "@remix-run/serve": "^2.17.1",
-    "@shopify/app-bridge-react": "^4.2.4",
+    "@remix-run/node": "^2.13.1",
+    "@remix-run/react": "^2.13.1",
+    "@shopify/app-bridge-react": "^3.2.2",
     "@shopify/polaris": "^13.9.5",
-    "@shopify/shopify-api": "^12.0.0",
-    "@shopify/shopify-app-remix": "^2.0.1",
+    "@shopify/shopify-app-remix": "^4.0.2",
     "@shopify/shopify-app-session-storage-prisma": "^7.0.0",
-    "express": "^4.18.2",
-    "node-fetch": "^2.7.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "esm": "^3.2.25",
+    "isbot": "^5.1.31",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router": "^6.30.1",
+    "react-router-dom": "^6.30.1"
   },
   "devDependencies": {
     "@remix-run/dev": "^2.17.1",
-    "esbuild": "^0.18.20",
-    "prisma": "^6.16.3",
-    "vite": "^5.4.20"
+    "@remix-run/serve": "^2.17.1",
+    "@rollup/plugin-json": "^6.1.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "esbuild-register": "^3.6.0",
+    "vite": "^5.0.0"
   }
 }

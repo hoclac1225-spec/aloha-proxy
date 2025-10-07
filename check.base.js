@@ -1,4 +1,4 @@
-ï»¿// check-json.js
+// check-json.js
 import fs from 'fs';
 import path from 'path';
 
@@ -11,11 +11,11 @@ function walk(dir) {
     } else if (file.endsWith('.json')) {
       try {
         const content = fs.readFileSync(full, 'utf8');
-        // kiÃŸâ•—Ã¢m tra kâ”œâ•œ tÃŸâ•—â–’ export/comment
+        // kiß+âm tra k++ tß+¦ export/comment
         if (/export|\/\/|\/\*/.test(content)) {
           console.warn('[POTENTIAL ISSUE] JS syntax in JSON:', full);
         }
-        JSON.parse(content); // kiÃŸâ•—Ã¢m tra thuÃŸâ•‘Âºn JSON
+        JSON.parse(content); // kiß+âm tra thuß¦ºn JSON
       } catch (e) {
         console.error('[INVALID JSON]', full, e.message);
       }
@@ -23,4 +23,4 @@ function walk(dir) {
   }
 }
 
-walk('./app'); // â”€Ã¦ÃŸâ•—Ã²i ./app thâ”œÃ¡nh thâ•žâ–‘ mÃŸâ•—Ã‘c repo
+walk('./app'); // -æß+òi ./app th+ánh th¦¦ mß+Ñc repo

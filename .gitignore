@@ -28,3 +28,14 @@ extensions/*/dist/
 # Shopify dev files
 .shopify/*
 .shopify.lockdev.db
+
+# local prepatch backups
+*.prepatch
+
+
+# local backup files
+*.prepatch
+*.bakfix
+*.bak
+*.manual
+*.bak.manual

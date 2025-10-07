@@ -1,1 +1,1 @@
-﻿/* content from src/js/onboarding.js (paste full content) */
+/* content from src/js/onboarding.js (paste full content) */

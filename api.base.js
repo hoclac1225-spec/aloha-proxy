@@ -1,4 +1,4 @@
-﻿// src/js/api.js
+// src/js/api.js
 /**
  * callAPI - helper fetch wrapper
  * - always tries to parse JSON response (if any)
@@ -28,7 +28,7 @@ export async function callAPI(url, method = "GET", body = null, headers = {}) {
     try {
       data = text ? JSON.parse(text) : null;
     } catch (err) {
-      // Not JSON ΓÇö return raw
+      // Not JSON G�� return raw
       data = { raw: text };
     }
 

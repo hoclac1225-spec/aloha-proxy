@@ -1,4 +1,4 @@
-﻿// findfiles.js
+// findfiles.js
 const fs = require('fs'), path = require('path');
 const hits = [];
 function walk(dir){

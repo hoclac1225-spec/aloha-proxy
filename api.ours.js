@@ -1,5 +1,5 @@
-Ôªø// src/js/api.js
-// Nh√ü‚ïó√Ö g√ü‚ïó√¨n, defensive fetch helper that expects JSON responses (or text fallback).
+// src/js/api.js
+// Nhﬂ+≈ gﬂ+Ïn, defensive fetch helper that expects JSON responses (or text fallback).
 
 /**
  * Safe fetch wrapper for JSON endpoints.
